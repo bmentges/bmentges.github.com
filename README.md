@@ -1,3 +1,14 @@
+Esse blog foi criado com o Jekyll-Bootstrap
+
+Comandos rake:
+
+rake page                           # Create a new page.
+rake post title="titulo"            # Begin a new post in ./_posts
+rake preview                        # Launch preview environment
+rake theme:install  # Install theme
+rake theme:package  # Package theme
+rake theme:switch   # Switch between Jekyll-bootstrap themes.
+
 # Jekyll-Bootstrap
 
 The quickest way to start and publish your Jekyll powered blog. 100% compatible with GitHub pages
