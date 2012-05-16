@@ -95,12 +95,11 @@ Este arquivo é um arquivo default do config.rb para a maioria dos nossos deploy
 10. ``set :repository, "."``: Aqui você configura o diretorio raiz que gerará o arquivo com a extensão .tar.gz. que irá ser enviado para o servidor. No final do arquivo tem uma instrução de como ignorar arquivos para não copiar tudo.
 11. Linha em branco, para legibilidade :)
 12. ``set :deploy_to, "/var/www/#{application}"``: Aqui é a configuração de onde o arquivo será descompactado no servidor.
-13. ``set :deploy_via, :copy``:
-14. ``set :deploy_env, 'dev'``:
+13. ``set :deploy_via, :copy``: Essa configuração indica que iremos copiar um arquivo pro servidor.
+14. ``set :deploy_env, 'dev'``: Essa é uma configuração default... não afeta nada.
 15. Linha em branco, para legibilidade :)
-16. ``set :copy_dir, "/tmp"``:
-17. ``set :copy_remote_dir, "/tmp"``:
-18. ``set :copy_exclude, [ ".git", "**/*.log" ]``: 
-
+16. ``set :copy_dir, "/tmp"``: Esta configuração define onde no seu sistema será gerado o arquivo tar.gz para ser enviado ao servidor. Eu geralmente coloco no /tmp.
+17. ``set :copy_remote_dir, "/tmp"``: Esta configuração define onde no servidor o arquivo será colocado, para depois ser descomprimido no diretório da configuração deploy_to.
+18. ``set :copy_exclude, [ ".git", "**/*.log" ]``: Aqui você define quais arquivos não serão incluídos no .tar.gz. Útil para tirar arquivos fonte desnecessários, arquivos de testes, do controle de versão, etc. (muito útil)
 
 
