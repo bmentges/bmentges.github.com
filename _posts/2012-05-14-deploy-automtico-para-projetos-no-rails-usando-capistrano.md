@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Deploy automático para projetos não Rails, usando Capistrano"
-published: false
+published: true
 description: ""
 category: devops
 tags: [capistrano, deploy, devops]
@@ -102,4 +102,91 @@ Este arquivo é um arquivo default do config.rb para a maioria dos nossos deploy
 17. ``set :copy_remote_dir, "/tmp"``: Esta configuração define onde no servidor o arquivo será colocado, para depois ser descomprimido no diretório da configuração deploy_to.
 18. ``set :copy_exclude, [ ".git", "**/*.log" ]``: Aqui você define quais arquivos não serão incluídos no .tar.gz. Útil para tirar arquivos fonte desnecessários, arquivos de testes, do controle de versão, etc. (muito útil)
 
+#### E agora ?
 
+Após configurar este arquivo, iremos configurar os arquivos referente aos ambientes: 
+
+{% highlight bash %}
+ $ mkdir -p config/deploy/
+ $ touch config/deploy/dev.rb config/deploy/staging.rb config/deploy/prod.rb
+{% endhighlight %}
+
+Abra o arquivo no seu editor preferido (vim): ``config/deploy/dev.rb`` e coloque o seguinte conteúdo:
+
+
+{% highlight ruby linenos %}
+role :app, "www.meuservidor.com"
+role :web, "www.meuservidor.com"
+role :db,  "www.meuservidor.com", :primary => true
+{% endhighlight %}
+
+Aqui neste arquivo você configurará o seu servidor com as roles :app, :web e :db. Só isso é o necessário neste arquivo. Os arquivos ``config/deploy/staging.rb`` e ``config/deploy/prod.rb`` recebem a mesma configuração, trocando o servidor, claro. Um exemplo de deploy pra produção em mais de um servidor:
+
+{% highlight ruby linenos %}
+role :app, "www.meuservidordeproducao1.com", "www.meuservidordeproducao2.com"
+role :web, "www.meuservidordeproducao1.com"
+role :db,  "www.meuservidordeproducao2.com", :primary => true
+{% endhighlight %}
+
+Nessa configuração você poderá colocar o ip do seu servidor no lugar do hostname se preferir. As roles são usadas para definir onde alguns comandos serão realizados, quais servidores vão receber o deploy, etc.
+
+#### O que o capistrano faz que é específico do Rails ?
+
+Bom antes de explicar isso, preciso explicar sobre a estrutura de diretórios que ele cria para fazer o deploy. A sua configuração ``:deploy_to`` é usada e para explicar vou assumir que você configurou como no exemplo acima: ``/var/www/super_django``. Com essa estrutura, o Capistrano precisará criar a seguinte árvore de diretórios:
+
+{% highlight bash %}
+ $ cd /var/www/super_django
+ $ ls
+ current
+ shared
+ releases
+{% endhighlight %}
+
+1. O diretório *releases* é onde o capistrano irá descomprimir o seu .tar.gz, usando o timestamp da maquina na hora do deploy como pasta do conteúdo, ou seja, ele irá criar antes de descomprimir o diretorio ``/var/www/super_django/releases/20120514143154`` (por exemplo), e irá descomprimir seu .tar.gz aí dentro.
+2. O diretório *current* é um link simbólico pro último diretório criado no releases. Esse link é destruído a cada deploy e reconstruído apontando pra nova pasta do releases, ou seja, a pasta do deploy atual que você estará fazendo.
+3. O diretório *shared* é um diretório utilizado para armazenar coisas que serão usadas por todas as versões deployadas, que você não pode perder, por exemplo: Upload dos usuários.
+
+Dessa forma o Capistrano facilita uma coisa muito importante em deploys: A possibilidade de fazer rollback de forma simples. Um comando ``cap rollback`` fará com que ele conecte no servidor, remova o link simbolico atual e crie o link simbolico pra versão anterior que estiver no releases.
+
+Uma das coisas específicas que o Capistrano faz para projetos rails é criar um link simbólico do public da pasta Rails pro shared. E a outra é o restart onde ele tenta rodar o arquivo current/script/process/reaper. Precisamos desabilitar isso, como? Assim:
+
+Abra o arquivo ``Capfile`` na raiz do seu projeto e adicione ao **final do arquivo**:
+
+{% highlight ruby %}
+
+namespace :deploy do
+    task :finalize_update do
+        # essa task assume que eh um projeto rails e faz
+        # symlink do public pro shared, e do logs
+        # coisa que nao queremos
+    end
+
+    # :restart redefinido para nao chamar o reaper
+    desc "Tira a configuracao especifica do rails de restart, podemos colocar a nossa aqui"
+    task :restart, :roles => :app do
+        # aqui voce pode configurar o seu restart
+        # run /var/www/:application/restart/meu-script-de-restart.sh
+    end
+end
+
+{% endhighlight %}
+
+Este código sobrescreve duas tasks: :finalize_update e :restart. Elas são as tasks especificas do Rails e basta você modificá-las para a sua necessidade.
+
+É também importante habilitar a task que limpa o releases se passar de um número configurado de pastas, para não encher seu filesystem com releases infinitos. Cada deploy gera uma pasta no releases como explicado anteriormente, então, para isso, coloque em qualquer lugar do seu ``Capfile``:
+
+{% highlight ruby %}
+set :keep_releases, 3
+after "deploy:restart", "deploy:cleanup"
+{% endhighlight %}
+
+Com isso, você configura para 3 o número máximo de releases (pode ser qualquer número), e caso um 4o release seja criado, o mais antigo será apagado automaticamente. É bastante útil.
+### Conclusão
+
+Foi fácil criar um mecanismo automático de deploy para qualquer projeto que não seja Rails, seguindo essas dicas. Podemos inclusive alterar o comportamento com hooks, como usamos ali acima quando escrevemos o ``after deploy:restart, "deploy:cleanup"``. Usando isso você conseguirá fazer qualquer passo em qualquer uma das fases do deploy do Capistrano, como por exemplo gerar os estáticos do Django (1.3+) rodando ``./manage.py collectstatic``. 
+
+Para saber mais sobre o processo de deploy do Capistrano, as fases e como encaixar seu Hook, veja essa [imagem](https://github.com/mpasternacki/capistrano-documentation-support-files/raw/master/default-execution-path/Capistrano%20Execution%20Path.jpg "Processo de deploy do Capistrano")
+
+Caso queira ver o template completo deste tutorial, subi ele aqui: [Template Capistrano para projetos não Rails](https://github.com/bmentges/capistrano-ext-template-non-rails-apps "Capistrano multistage template for non Rails apps")
+
+Qualquer dúvida é só perguntar aí nos comentários. Abraços e bom Deploy :)
