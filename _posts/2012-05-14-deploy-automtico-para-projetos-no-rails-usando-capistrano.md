@@ -185,6 +185,10 @@ Com isso, você configura para 3 o número máximo de releases (pode ser qualque
 
 Foi fácil criar um mecanismo automático de deploy para qualquer projeto que não seja Rails, seguindo essas dicas. Podemos inclusive alterar o comportamento com hooks, como usamos ali acima quando escrevemos o ``after deploy:restart, "deploy:cleanup"``. Usando isso você conseguirá fazer qualquer passo em qualquer uma das fases do deploy do Capistrano, como por exemplo gerar os estáticos do Django (1.3+) rodando ``./manage.py collectstatic``. 
 
+Para executar o deploy, basta digitar: ``cap <<ambiente>> deploy`` onde <<ambiente>> é um dos seus stages configurados, que no nosso caso podem ser: ``cap dev deploy``, ``cap staging deploy`` e ``cap prod deploy``. O default stage é usado no ``cap deploy``, sem passar o ambiente.
+
+No primeiro deploy, antes do comando acima precisa digitar ``cap <<ambiente>> deploy:setup`` para o Capistrano criar a estrutura básica de diretórios no seu servidor, como expliquei lá em cima :)
+
 Para saber mais sobre o processo de deploy do Capistrano, as fases e como encaixar seu Hook, veja essa [imagem](https://github.com/mpasternacki/capistrano-documentation-support-files/raw/master/default-execution-path/Capistrano%20Execution%20Path.jpg "Processo de deploy do Capistrano")
 
 Caso queira ver o template completo deste tutorial, subi ele aqui: [Template Capistrano para projetos não Rails](https://github.com/bmentges/capistrano-ext-template-non-rails-apps "Capistrano multistage template for non Rails apps")
