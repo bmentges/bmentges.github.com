@@ -1,3 +1,4 @@
 name: Bruno Mentges de Carvalho
 pygments: true
 permalink: /:year/:month/:day/:title
+safe: false
