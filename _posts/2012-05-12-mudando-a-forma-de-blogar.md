@@ -5,7 +5,6 @@ description: "O que me fez sair do wordpress?"
 category: blogging
 tags: ['blog']
 ---
-{% include JB/setup %}
 
 De um tempo pra cá venho estudando uma forma mais simples de blogar. O
 Wordpress foi meu software predileto de blogging, mas hoje em dia ele não serve
