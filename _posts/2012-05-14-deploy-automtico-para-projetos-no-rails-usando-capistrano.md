@@ -6,7 +6,6 @@ description: ""
 category: devops
 tags: [capistrano, deploy, devops]
 ---
-{% include JB/setup %}
 
 [Capistrano](https://github.com/capistrano/capistrano/wiki/ "Capistrano") é uma ferramenta de [deploy](http://pt.wikipedia.org/wiki/Implanta%C3%A7%C3%A3o_de_software "Implantação de Software") automático, usada para facilitar a vida do programador na hora de enviar o software para o ambiente de produção, ou qualquer outro ambiente externo (ex: ambiente de desenvolvimento, homologação, etc).
 
@@ -190,6 +189,8 @@ Para executar o deploy, basta digitar: ``cap <<ambiente>> deploy`` onde <<ambien
 No primeiro deploy, antes do comando acima precisa digitar ``cap <<ambiente>> deploy:setup`` para o Capistrano criar a estrutura básica de diretórios no seu servidor, como expliquei lá em cima :)
 
 Para saber mais sobre o processo de deploy do Capistrano, as fases e como encaixar seu Hook, veja essa [imagem](https://github.com/mpasternacki/capistrano-documentation-support-files/raw/master/default-execution-path/Capistrano%20Execution%20Path.jpg "Processo de deploy do Capistrano")
+
+![capexecpath](/images/capistrano_execution_path.jpg)
 
 Caso queira ver o template completo deste tutorial, subi ele aqui: [Template Capistrano para projetos não Rails](https://github.com/bmentges/capistrano-ext-template-non-rails-apps "Capistrano multistage template for non Rails apps")
 
