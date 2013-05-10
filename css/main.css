@@ -14,9 +14,10 @@ html, body { height: 100%; }
 
 body {
   background-color: #FFF;
-  font: 13.34px Helvetica, Arial, sans-serif;
+  font: 14px georgia, times, serif;
   font-size: small;
   text-align: center;
+  color: #080808;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -45,12 +46,12 @@ ul.posts {
 }
 
 ul.posts li {
-  line-height: 1.75em;
+  line-height: 1.35em;
 }
 
 ul.posts span {
   color: #aaa;
-  font-family: Monaco, "Courier New", monospace;
+  font-family: georgia, times, serif;
   font-size: 80%;
 }
 
@@ -133,6 +134,26 @@ ul.posts span {
 /*****************************************************************************/
 
 /* standard */
+
+.blog-title {
+  font-size: 150%;
+  line-height: 130%;
+}
+
+#post h3 {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+.site h4 {
+  margin-top: 20px;
+  margin-bottom: 20px;
+}
+
+#post {
+  font-size: 120%;
+}
+
 #post pre {
   border: 1px solid #ddd;
   background-color: #eef;
@@ -169,3 +190,4 @@ img[alt=capexecpath] { width: 930px; }
 #disqus_thread {
   margin-top: 40px;
 }
+
