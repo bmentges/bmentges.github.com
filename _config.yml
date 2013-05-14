@@ -1,4 +1,6 @@
 name: Bruno Mentges de Carvalho
+url: http://www.brunocarvalho.com
+description: My Blog on Software Development, Management and Personal Stuff
 pygments: true
 permalink: /:year/:month/:day/:title
 safe: false
