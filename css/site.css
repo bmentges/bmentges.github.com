@@ -60,3 +60,14 @@ hr {
   border-width: 1px 0;
   margin: 18px 0;
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Fjalla One', sans-serif;
+}
+
+body {
+  font-family: "Robotos",Helvetica,Arial,sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  color: #303030;
+}
