@@ -1,0 +1,50 @@
+@import url(http://fonts.googleapis.com/css?family=Roboto:400,300,100|Roboto+Slab:300|Fjalla+One);
+/*
+ * Google Fonts Imported:
+  font-family: 'Roboto', sans-serif;
+  font-family: 'Roboto Condensed', sans-serif;
+  font-family: 'Roboto Slab', serif;
+  font-family: 'Fjalla One', sans-serif;
+*/
+
+.bmentges {
+  margin-top: 20px;
+}
+
+.info {
+  margin-top: 20px;
+}
+
+.post-list {
+  font-family: 'Robotos', sans-serif;
+  font-size: 20px;
+  list-style: none;
+}
+.post-list li {
+  padding-top: 25px;
+}
+
+.blog-title {
+  margin-top: 20px;
+  font-family: 'Fjalla One', sans-serif;
+  font-size: 38px;
+}
+
+.post {
+  width: 590px;
+  font-family: 'Robotos', sans-serif;
+  font-size: 18px;
+  letter-spacing: 1px;
+  font-weight: 300;
+  line-height: 21px;
+  color: #000;
+}
+
+blockquote {
+  color:#515151;
+}
+
+.meta {
+  color: #999999;
+  font-size: 12px;
+}

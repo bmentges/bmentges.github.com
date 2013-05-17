@@ -5,46 +5,43 @@
         <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title>{{ page.title }}</title>
         <meta name="viewport" content="width=device-width">
+        <meta name="description" content="Personal blog">
+        <meta name="author" content="Bruno Mentges de Carvalho">
 
         <!-- syntax highlighting CSS -->
         <link rel="stylesheet" href="/css/syntax.css">
 
         <!-- Custom CSS -->
-        <link rel="stylesheet" href="/css/main.css">
-        <link rel="stylesheet" href="/css/pages.css">
+        <link rel="stylesheet" href="/css/bootstrap.min.css" type="text/css" media="screen" charset="utf-8">
+        <link rel="stylesheet" href="/css/site.css" type="text/css" media="screen" charset="utf-8">
 
     </head>
     <body>
 
         <div class="container">
-          <div class="site">
-            <div class="header">
-              <header id="site-header">
-                <a href="/"><img src="/images/round_face_bmentges.png" width="120px" height="120px" alt="Bruno Mentges de Carvalho"></a>
-              </header>
-            </div>
-     
-                {{ content }}
-
-            <div class="footer">
-              <div class="contact">
+          <div class="row">
+            <div class="span-4">
+                <a href="/"><img src="/images/round_face_bmentges.png" width="120px" height="120px" alt="Bruno Mentges de Carvalho" class="bmentges"></a>
+                <div class="info">
+                
                 <p>
                   Bruno Mentges de Carvalho<br />
                   CTO @ <a href="http://www.agenciatree.com">Agencia Tree
                     Software House</a><br />
-                  bmentges@gmail.com
+                  bruno@agenciatree.com
                 </p>
-              </div>
-              <div class="contact">
                 <p>
-                  <a href="http://github.com/bmentges/">github.com/bmentges</a><br/>
-                  <a
-                    href="http://twitter.com/brunocarvalho/">twitter.com/brunocarvalho</a><br/>
+                  <a href="http://github.com/bmentges/">Github</a><br/>
+                  <a href="http://twitter.com/brunocarvalho/">Twitter</a><br/>
+                  <a href="http://br.linkedin.com/in/brunomentgesdecarvalho">Linked.in</a><br/>
                   <a href="/feed.xml">RSS</a>
                 </p>
               </div>
             </div>
-
+            <div class="span-5">
+                {{ content }}
+            </div>
+          </div>
         </div> <!-- /container -->
 
     <script type="text/javascript">
@@ -60,5 +57,6 @@
       })();
 
     </script>
+    <script type="text/javascript" charset="utf-8" src="/js/bootstrap.min.js"></script>
     </body>
 </html>
