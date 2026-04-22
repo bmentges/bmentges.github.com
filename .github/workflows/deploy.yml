@@ -19,10 +19,8 @@ jobs:
 
       - name: Install, build, and upload with Astro
         uses: withastro/action@v3
-        # with:
-        #   path: . # The root location of your Astro project inside the repository. (optional)
-        #   node-version: 20 # The specific version of Node.js to use for building your site. Defaulting to 20. (optional)
-        #   package-manager: npm # The package manager to use. (optional)
+        with:
+          package-manager: npm
 
   deploy:
     needs: build
