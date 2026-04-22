@@ -1,0 +1,348 @@
+---
+title: "The 70% Bug Squash: What One Hackathon Taught Me About Tech Debt"
+description: "How a 2-day hackathon at a Brazilian e-commerce company squashed 70% of outstanding bugs and improved uptime from 92% to 99%. The real lesson isn't about hackathons — it's about permission."
+category: "Engineering Leadership"
+date: 2026-04-11
+tags:
+  - "tech-debt"
+  - "hackathon"
+  - "engineering-culture"
+  - "leadership"
+published: true
+---
+
+
+
+
+            
+            <section class="content-section">
+                <p>I was brought in as a technical consultant to a major Brazilian e-commerce marketplace. The kind of company where millions of transactions flow through the platform every month, where a slow checkout page isn't an inconvenience but a revenue event, and where the engineering organization had grown fast enough that nobody was quite sure how many microservices they were running anymore.</p>
+                <p>The numbers told the story before anyone had to say it out loud. Four development teams, one infrastructure team, and a site uptime hovering at 92%. That sounds almost acceptable until you do the math: 8% downtime on an e-commerce platform means roughly 58 hours a month where customers can't buy things. In Brazilian e-commerce, where competition is fierce and customer loyalty is thin, those hours translate directly to lost revenue and eroded trust.</p>
+                <p>But the uptime number was a symptom, not the disease. The real problem lived in the bug tracker: over 200 open tickets, some dating back more than a year. Broken search filters that returned wrong results. Payment callbacks that silently failed under specific conditions. Admin panel features that had never worked correctly since launch. Edge cases in the inventory system that occasionally oversold products, creating fulfillment nightmares.</p>
+                <p>The engineers knew about all of it. They'd filed the bugs themselves. But ticket after ticket sat in the backlog, aging quietly, because there was always a feature to ship, always a deadline to hit, always a product manager with a roadmap that didn't have room for "fix the thing that's been broken for six months."</p>
+                <p>Morale was predictably low. Not the dramatic kind of low where people quit loudly. The quiet kind, where engineers stop caring about quality because they've learned that quality isn't what gets rewarded. Ship the feature. Hit the sprint goal. Move on. The bugs will still be there next quarter.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The diagnosis: small bugs, big backlog, zero permission</h2>
+                <p>I spent my first week doing what I always do when I arrive somewhere new: I read. I read the bug tracker. I read the incident reports. I read the deployment logs. I talked to engineers on every team, not about what they were building, but about what was broken and why it hadn't been fixed.</p>
+                <p>The pattern was remarkably consistent. I categorized every open bug by estimated fix time, and the distribution was almost comically skewed:</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 720 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Bar chart showing bug backlog distribution: 70% small bugs under 2 hours, 20% medium bugs 2-8 hours, 10% large bugs over 1 day">
+                        
+                        <rect width="720" height="360" fill="#0a0a0a" rx="8" ry="8"/>
+                        <rect x="1" y="1" width="718" height="358" rx="8" ry="8" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="360" y="36" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" fill="#8b93a3">The Bug Backlog: 200+ Tickets by Fix Time</text>
+
+                        
+                        <text x="110" y="92" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="11" fill="#525b6d">Small (&lt;2h)</text>
+                        <text x="110" y="177" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="11" fill="#525b6d">Medium (2-8h)</text>
+                        <text x="110" y="262" text-anchor="end" font-family="'JetBrains Mono', monospace" font-size="11" fill="#525b6d">Large (&gt;1 day)</text>
+
+                        
+                        <line x1="130" y1="80" x2="680" y2="80" stroke="#1f2937" stroke-width="0.5"/>
+                        <line x1="130" y1="165" x2="680" y2="165" stroke="#1f2937" stroke-width="0.5"/>
+                        <line x1="130" y1="250" x2="680" y2="250" stroke="#1f2937" stroke-width="0.5"/>
+
+                        
+                        <rect x="130" y="68" width="490" height="36" rx="4" ry="4" fill="#059669" opacity="0.9"/>
+                        <text x="632" y="92" text-anchor="start" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#059669" dx="6">70%</text>
+                        <text x="145" y="92" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="500" fill="#0a0a0a">~140 bugs</text>
+
+                        
+                        <rect x="130" y="153" width="140" height="36" rx="4" ry="4" fill="#34d399" opacity="0.8"/>
+                        <text x="282" y="177" text-anchor="start" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#34d399" dx="6">20%</text>
+                        <text x="145" y="177" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="500" fill="#0a0a0a">~40 bugs</text>
+
+                        
+                        <rect x="130" y="238" width="70" height="36" rx="4" ry="4" fill="#525b6d" opacity="0.8"/>
+                        <text x="212" y="262" text-anchor="start" font-family="'JetBrains Mono', monospace" font-size="12" font-weight="600" fill="#525b6d" dx="6">10%</text>
+                        <text x="145" y="262" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="500" fill="#f4f6f9">~20</text>
+
+                        
+                        <rect x="340" y="296" width="280" height="40" rx="6" ry="6" fill="none" stroke="#059669" stroke-width="1" stroke-dasharray="4,3"/>
+                        <text x="480" y="314" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#059669">Most debt is small and fixable.</text>
+                        <text x="480" y="328" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#059669">It just never gets permission to be fixed.</text>
+                    </svg>
+                </div>
+
+                <p>Seventy percent of the bugs were small. Trivially small. A missing null check. A wrong sort order. A CSS overflow on mobile. A misconfigured timeout. A hardcoded string that should have been a config value. Each one would take an experienced engineer less than two hours to fix, including testing.</p>
+                <p>But in a feature-driven sprint cadence, two hours is a luxury. When the product team has committed to delivering three features this sprint, nobody is going to pull an engineer off feature work to fix a search filter that "mostly works." The cost of each individual bug is small. The accumulated cost of 140 small bugs is a platform that feels broken, an uptime number that embarrasses everyone, and an engineering team that has internalized the message that quality doesn't matter.</p>
+                <p>The bugs weren't hard. They were just never given <strong>permission</strong> to be fixed.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The hackathon: two days, one rule, no code review</h2>
+                <p>I proposed something simple to the engineering leadership: give me the teams for two days. Two days where the only work allowed is bug fixes. No features. No roadmap items. No planning meetings. Just engineers, a bug backlog, and permission to fix things.</p>
+                <p>There was resistance, naturally. Two days of no feature work is an eternity in a startup-speed e-commerce company. Product managers calculated the feature velocity they'd lose. Engineering managers worried about sprint commitments. I made the case with the numbers: the bugs were costing more in aggregate — through downtime, customer complaints, workarounds, and engineer frustration — than two days of paused feature work. And the uptime number was becoming a board-level conversation.</p>
+                <p>They agreed. We called it a hackathon, because "bug fix sprint" doesn't inspire anyone, and framing matters.</p>
+                <p>The rules were deliberately minimal:</p>
+                <ul>
+                    <li><strong>Only bugs.</strong> No features, no refactoring projects, no "while I'm in here I might as well." Fix the bug, close the ticket, move on.</li>
+                    <li><strong>Pick from the backlog.</strong> Every team works from the shared bug backlog. Pick what you know, pick what annoys you, pick what your users complain about. First come, first served.</li>
+                    <li><strong>No code review required.</strong> This was controversial. But the bugs were small, the engineers were experienced, and the bottleneck we needed to remove was friction. Trust the team. Ship directly.</li>
+                    <li><strong>Track everything on a board.</strong> A physical board (and a digital mirror) with three columns: To Do, In Progress, Done. Every squashed bug gets moved with a satisfying physical gesture. Visibility matters for momentum.</li>
+                </ul>
+                <p>That last point — the board — turned out to be more important than I expected. There's something deeply motivating about watching a wall fill up with completed tickets over the course of a day. By lunch on day one, the Done column had overflowed its allotted space. Engineers were taking photos and posting them in the team chat. The energy in the office was different — people were laughing, high-fiving, competing informally to see which team could close the most tickets.</p>
+                <p>It felt like the early days of a startup, when shipping was fast and fixing things was the whole job. Because for two days, it was.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The results: 70% gone in 48 hours</h2>
+                <p>By the end of day two, the numbers were hard to argue with:</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Before and after comparison showing bug backlog reduced from 200+ to 60, uptime improved from 92% to 99%, and team morale from low to high">
+                        
+                        <rect width="720" height="320" fill="#0a0a0a" rx="8" ry="8"/>
+                        <rect x="1" y="1" width="718" height="318" rx="8" ry="8" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="360" y="36" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" fill="#8b93a3">2-Day Hackathon Results</text>
+
+                        
+                        <text x="240" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#525b6d">BEFORE</text>
+                        <text x="480" y="68" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">AFTER</text>
+
+                        
+                        <line x1="360" y1="56" x2="360" y2="280" stroke="#1f2937" stroke-width="1" stroke-dasharray="6,4"/>
+
+                        
+                        <text x="80" y="120" font-family="'JetBrains Mono', monospace" font-size="11" fill="#8b93a3">Bug Backlog</text>
+                        <rect x="170" y="96" width="140" height="40" rx="6" ry="6" fill="none" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="240" y="122" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="600" fill="#8b93a3">200+</text>
+                        
+                        <line x1="330" y1="116" x2="390" y2="116" stroke="#34d399" stroke-width="1.5"/>
+                        <polygon points="396,116 386,110 386,122" fill="#34d399"/>
+                        <rect x="410" y="96" width="140" height="40" rx="6" ry="6" fill="none" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="480" y="122" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="600" fill="#34d399">~60</text>
+
+                        
+                        <text x="80" y="190" font-family="'JetBrains Mono', monospace" font-size="11" fill="#8b93a3">Uptime</text>
+                        <rect x="170" y="166" width="140" height="40" rx="6" ry="6" fill="none" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="240" y="192" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="600" fill="#8b93a3">92%</text>
+                        
+                        <line x1="330" y1="186" x2="390" y2="186" stroke="#34d399" stroke-width="1.5"/>
+                        <polygon points="396,186 386,180 386,192" fill="#34d399"/>
+                        <rect x="410" y="166" width="140" height="40" rx="6" ry="6" fill="none" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="480" y="192" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="600" fill="#34d399">99%</text>
+
+                        
+                        <text x="80" y="260" font-family="'JetBrains Mono', monospace" font-size="11" fill="#8b93a3">Team Morale</text>
+                        <rect x="170" y="236" width="140" height="40" rx="6" ry="6" fill="none" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="240" y="262" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="600" fill="#8b93a3">Low</text>
+                        
+                        <line x1="330" y1="256" x2="390" y2="256" stroke="#34d399" stroke-width="1.5"/>
+                        <polygon points="396,256 386,250 386,262" fill="#34d399"/>
+                        <rect x="410" y="236" width="140" height="40" rx="6" ry="6" fill="none" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="480" y="262" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="18" font-weight="600" fill="#34d399">High</text>
+
+                        
+                        <text x="620" y="122" font-family="'JetBrains Mono', monospace" font-size="11" fill="#059669">-70%</text>
+                        <text x="620" y="192" font-family="'JetBrains Mono', monospace" font-size="11" fill="#059669">+7pp</text>
+
+                        
+                        <text x="360" y="304" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Uptime improvement measured over the following month</text>
+                    </svg>
+                </div>
+
+                <p>The bug backlog dropped from over 200 tickets to roughly 60. The remaining 60 were the genuinely hard bugs — the ones that required architectural changes, cross-team coordination, or deep investigation. The 140+ that were squashed were exactly what the analysis predicted: small, fixable issues that just needed someone to sit down and do the work.</p>
+                <p>Within a month, uptime climbed from 92% to 99%. Not because we'd rebuilt the infrastructure or deployed some new monitoring system. Because we'd fixed the hundred small things that were collectively dragging the platform down. A payment callback that silently failed once every thousand requests. A cache invalidation bug that served stale product data. A connection pool that wasn't sized correctly for peak traffic. Each one contributed a fraction of a percent of downtime. Together, they accounted for seven percentage points.</p>
+                <p>But the most important result wasn't in the metrics. It was in the conversations I overheard after the hackathon. Engineers saying things like: "I can't believe that bug was there for eight months — it took me forty minutes to fix." And: "Why don't we do this every month?" And, most tellingly: "I actually feel good about our codebase for the first time in a year."</p>
+                <p>The hackathon didn't just fix bugs. It fixed the team's relationship with their own code.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The deeper lesson: permission is the bottleneck</h2>
+                <p>Here's what most people get wrong about tech debt. They think the problem is technical. That the codebase is too complex, the architecture is too tangled, the debt is too deeply embedded to address. And sometimes that's true — some tech debt really is structural and requires significant investment to resolve.</p>
+                <p>But most of it isn't. Most tech debt — the kind that drags down uptime, frustrates users, and demoralizes engineers — is a pile of small, individually fixable issues that accumulate because the organization's incentive structure doesn't reward fixing them.</p>
+
+                
+                <div class="article-diagram">
+                    <svg viewBox="0 0 620 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Permission framework showing three layers: Skills at the bottom (engineers have this), Time in the middle (needs allocation), and Permission at the top (the real bottleneck)">
+                        
+                        <rect width="620" height="380" fill="#0a0a0a" rx="8" ry="8"/>
+                        <rect x="1" y="1" width="618" height="378" rx="8" ry="8" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="310" y="36" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" fill="#8b93a3">Why Tech Debt Persists</text>
+
+                        
+                        <rect x="60" y="260" width="380" height="70" rx="8" ry="8" fill="none" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="250" y="290" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" fill="#34d399">Skills</text>
+                        <text x="250" y="316" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Engineers know how to fix the bugs</text>
+                        
+                        <rect x="398" y="274" width="28" height="20" rx="4" ry="4" fill="rgba(52, 211, 153,0.15)"/>
+                        <text x="412" y="290" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="12" fill="#34d399">OK</text>
+
+                        
+                        <rect x="90" y="170" width="320" height="70" rx="8" ry="8" fill="none" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="250" y="200" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" fill="#8b93a3">Time</text>
+                        <text x="250" y="226" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Needs explicit allocation</text>
+                        
+                        <rect x="368" y="184" width="28" height="20" rx="4" ry="4" fill="rgba(100,116,139,0.2)"/>
+                        <text x="382" y="200" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="12" fill="#8b93a3">?</text>
+
+                        
+                        <rect x="120" y="76" width="260" height="74" rx="8" ry="8" fill="rgba(5, 150, 105,0.1)" stroke="#059669" stroke-width="2.5"/>
+                        <text x="250" y="106" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="14" font-weight="600" fill="#059669">Permission</text>
+                        <text x="250" y="128" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#059669">The real bottleneck</text>
+                        <text x="250" y="142" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Stop shipping features. Fix things.</text>
+
+                        
+                        <line x1="470" y1="113" x2="392" y2="113" stroke="#059669" stroke-width="2" stroke-dasharray="6,4"/>
+                        <polygon points="392,113 402,107 402,119" fill="#059669"/>
+                        <text x="484" y="106" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#059669">UNLOCK</text>
+                        <text x="484" y="122" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">THIS</text>
+
+                        
+                        <line x1="250" y1="260" x2="250" y2="246" stroke="#525b6d" stroke-width="1" stroke-dasharray="3,3"/>
+                        <polygon points="250,240 245,250 255,250" fill="#525b6d"/>
+                        <line x1="250" y1="170" x2="250" y2="156" stroke="#525b6d" stroke-width="1" stroke-dasharray="3,3"/>
+                        <polygon points="250,150 245,160 255,160" fill="#525b6d"/>
+
+                        
+                        <text x="310" y="358" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">The bottleneck isn't technical. It's organizational.</text>
+                    </svg>
+                </div>
+
+                <p>Engineers know what's broken. They filed the bugs. They've been working around them for months. They've mentally sketched the fixes during standup while listening to yet another feature spec. The skill is there. The knowledge is there. The motivation is there — engineers <em>want</em> to work on a codebase they're proud of.</p>
+                <p>What's missing is permission. Explicit, unambiguous, top-down permission to stop shipping features and fix things. Not "you can work on bugs if you have spare time at the end of the sprint" — that time never materializes. Not "we should really address tech debt soon" — "soon" is a word that means "never" in product roadmaps. Real permission. Two days. Everyone. Only bugs. No exceptions.</p>
+                <p>The hackathon worked not because it was a clever format. It worked because it was a <strong>permission structure</strong>. It gave engineers something they couldn't give themselves: legitimate, protected time to fix the things they already knew how to fix. The hackathon wasn't a technical intervention. It was a cultural one.</p>
+                <p>This is why I tell engineering leaders: if your team has a large bug backlog and mediocre uptime, the first question isn't "what's wrong with our architecture?" The first question is "when was the last time we gave our engineers permission to fix things?"</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>What I changed after the hackathon</h2>
+                <p>A hackathon is a burst. It produces dramatic results, but bursts don't sustain. The 70% bug squash would have been a feel-good memory that faded within months if we hadn't built sustaining practices around it. Here's what we put in place:</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline showing progression from hackathon burst to sustained practices: code review policy, test requirements, fix-it Fridays, and CD system">
+                        
+                        <rect width="720" height="260" fill="#0a0a0a" rx="8" ry="8"/>
+                        <rect x="1" y="1" width="718" height="258" rx="8" ry="8" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="360" y="32" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="13" font-weight="600" fill="#8b93a3">Sustaining the Gains: From Burst to Practice</text>
+
+                        
+                        <line x1="60" y1="130" x2="660" y2="130" stroke="#1f2937" stroke-width="2"/>
+
+                        
+                        <circle cx="100" cy="130" r="18" fill="#059669" stroke="#059669" stroke-width="2"/>
+                        <text x="100" y="135" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#0a0a0a">1</text>
+                        <text x="100" y="80" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#059669">Hackathon</text>
+                        <text x="100" y="96" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">2-day burst</text>
+                        <text x="100" y="168" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">-70% bugs</text>
+
+                        
+                        <circle cx="240" cy="130" r="18" fill="rgba(52, 211, 153,0.2)" stroke="#34d399" stroke-width="2"/>
+                        <text x="240" y="135" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">2</text>
+                        <text x="240" y="80" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">Code Review</text>
+                        <text x="240" y="96" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Policy</text>
+                        <text x="240" y="168" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Tests on</text>
+                        <text x="240" y="182" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">all PRs</text>
+
+                        
+                        <circle cx="380" cy="130" r="18" fill="rgba(52, 211, 153,0.2)" stroke="#34d399" stroke-width="2"/>
+                        <text x="380" y="135" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">3</text>
+                        <text x="380" y="80" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">Intern</text>
+                        <text x="380" y="96" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Training</text>
+                        <text x="380" y="168" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Mentored dev</text>
+                        <text x="380" y="182" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">practices</text>
+
+                        
+                        <circle cx="520" cy="130" r="18" fill="rgba(52, 211, 153,0.2)" stroke="#34d399" stroke-width="2"/>
+                        <text x="520" y="135" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">4</text>
+                        <text x="520" y="80" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">Fix-it</text>
+                        <text x="520" y="96" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Fridays</text>
+                        <text x="520" y="168" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Recurring</text>
+                        <text x="520" y="182" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">permission</text>
+
+                        
+                        <circle cx="620" cy="130" r="18" fill="rgba(52, 211, 153,0.2)" stroke="#34d399" stroke-width="2"/>
+                        <text x="620" y="135" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">5</text>
+                        <text x="620" y="80" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="11" font-weight="600" fill="#34d399">CD System</text>
+                        <text x="620" y="96" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Kubernetes</text>
+                        <text x="620" y="168" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">Fast, safe</text>
+                        <text x="620" y="182" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" fill="#525b6d">deploys</text>
+
+                        
+                        <line x1="118" y1="130" x2="222" y2="130" stroke="#1f2937" stroke-width="1.5"/>
+                        <line x1="258" y1="130" x2="362" y2="130" stroke="#1f2937" stroke-width="1.5"/>
+                        <line x1="398" y1="130" x2="502" y2="130" stroke="#1f2937" stroke-width="1.5"/>
+                        <line x1="538" y1="130" x2="602" y2="130" stroke="#1f2937" stroke-width="1.5"/>
+
+                        
+                        <text x="100" y="218" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#059669">Burst</text>
+                        <line x1="155" y1="214" x2="620" y2="214" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3"/>
+                        <text x="400" y="240" text-anchor="middle" font-family="'JetBrains Mono', monospace" font-size="10" font-weight="600" fill="#34d399">Sustained Practice</text>
+                    </svg>
+                </div>
+
+                <h3>Code review policy with mandatory tests</h3>
+                <p>Before the hackathon, code review was optional and tests were aspirational. We instituted a policy: every pull request requires at least one reviewer and must include tests for the changed behavior. This sounds basic — because it is. But "basic" and "implemented" are different things. The policy prevented the backlog from refilling at the same rate. New code was held to a higher bar. Bugs still happened, but fewer of them were the trivial kind that dominated the old backlog.</p>
+
+                <h3>Intern developer training</h3>
+                <p>The company had several intern developers who were eager but hadn't been given structured mentorship. I set up a training program focused on testing practices, debugging methodology, and code review skills. This served two purposes: it developed junior talent (long-term investment) and it created additional capacity for maintaining code quality (short-term benefit). Within a few months, the interns were catching bugs in code review that would have previously made it to production.</p>
+
+                <h3>Fix-it Fridays</h3>
+                <p>Every other Friday afternoon was reserved for bug fixes and small improvements. No approval needed, no justification required. This was the hackathon's lasting legacy: <strong>recurring permission</strong>. It prevented the slow re-accumulation of small bugs that had created the original problem. It also gave engineers a predictable outlet for the quality improvements they wanted to make, which measurably improved morale.</p>
+
+                <h3>Continuous deployment on Kubernetes</h3>
+                <p>We built a proper CD pipeline on Kubernetes, replacing a manual deployment process that involved SSH-ing into servers and running scripts. This had two effects: it made deploying fixes fast and safe (minutes instead of hours, with automatic rollback), and it removed a hidden friction that had discouraged small fixes. When deploying is painful, engineers batch changes into large releases. When deploying is painless, they ship fixes as soon as they're ready.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The pattern for other teams</h2>
+                <p>I've since used variations of this approach at other companies. The specifics change — the backlog size, the team structure, the particular flavor of tech debt — but the pattern is consistent. Here's the playbook:</p>
+
+                <h3>Step 1: Assess the backlog honestly</h3>
+                <p>Categorize every open bug by estimated fix time. Be honest — don't inflate estimates to make the problem seem harder than it is. If 60-70% of your bugs are small, you have a permission problem, not a technical one. If most bugs are genuinely complex, you have a different problem (likely architectural) that a hackathon won't solve.</p>
+
+                <h3>Step 2: Get leadership buy-in for two days</h3>
+                <p>This is the hardest step. Present the data: the backlog size, the uptime cost, the morale impact. Calculate what the bugs are costing in concrete terms — downtime minutes, customer complaints, engineer time spent on workarounds. Two days of paused feature work is almost always cheaper than the ongoing cost of the debt. Make that case with numbers, not feelings.</p>
+
+                <h3>Step 3: Run the hackathon with minimal rules</h3>
+                <p>Keep it simple. Only bugs. Pick from the backlog. Track on a board. Don't over-organize it — the whole point is removing friction. The energy and momentum will emerge naturally once engineers realize they actually have permission to fix things.</p>
+
+                <h3>Step 4: Celebrate and measure</h3>
+                <p>Make the results visible. Share the before/after numbers with the whole company. Let engineers talk about what they fixed and how long it took. The "I can't believe that was only a 20-minute fix" stories are the most powerful advocacy for making this a regular practice.</p>
+
+                <h3>Step 5: Build sustaining practices</h3>
+                <p>This is where most teams fail. The hackathon produces a burst of progress, everyone feels great, and then three months later the backlog is right back where it started. The sustaining practices — code review requirements, test mandates, recurring fix-it time, fast deployment pipelines — are what prevent regression. Without them, you're just doing a feel-good exercise that you'll need to repeat every quarter.</p>
+
+                <h3>What goes wrong when you skip steps</h3>
+                <p>Skip the assessment, and you'll waste the hackathon on complex bugs that can't be fixed in two hours — demoralizing instead of energizing. Skip the leadership buy-in, and the hackathon gets interrupted on day one by "urgent" feature requests. Skip the sustaining practices, and you'll be back to 200 bugs within six months. Every step matters. The hackathon itself is just the catalyst.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Capture what you learn, or lose it</h2>
+                <p>A hackathon produces a burst of institutional knowledge. Over two days, engineers touch parts of the codebase they haven't looked at in months. They discover why things are broken, how the breakage manifests, and what the fix looks like. They find hidden dependencies, undocumented behaviors, and code that nobody remembers writing.</p>
+                <p>If you don't capture that knowledge, it evaporates. The bugs are fixed, but the understanding of <em>why</em> they existed and <em>what</em> they revealed about the system disappears back into individual engineers' heads, where it will be forgotten within weeks.</p>
+                <p>At the company, we required every engineer to write a brief note for each bug they fixed: what was the root cause, what was the fix, and what did it reveal about the system. These notes went into a shared knowledge base. Some of them turned out to be more valuable than the bug fix itself — "this module has no test coverage and a hardcoded dependency on the payment gateway" is a note that prevents future bugs, not just fixes past ones.</p>
+                <p>This is a pattern I've written about before: <a href="/posts/knowledge-base-as-agentic-memory">building a knowledge base</a> that compounds your team's understanding of the system over time. A hackathon is a particularly concentrated source of that knowledge. Don't let it go to waste.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The real story</h2>
+                <p>People remember the numbers: 70% of bugs squashed, uptime from 92% to 99%. Those numbers are real and they mattered to the business.</p>
+                <p>But the real story of that hackathon is simpler. A room full of engineers already knew what was broken. They already knew how to fix it. They'd been carrying that knowledge around for months, watching the bug count climb, feeling the slow erosion of pride in their work.</p>
+                <p>All they needed was someone to say: "Stop. Fix it. You have permission."</p>
+                <p>If your team has a growing bug backlog and declining quality metrics, ask yourself honestly: is the problem that the bugs are too hard to fix? Or is the problem that your organization has never given anyone explicit permission to fix them?</p>
+                <p>The answer is almost always the latter. And the fix is almost always simpler than you think.</p>
+            </section>

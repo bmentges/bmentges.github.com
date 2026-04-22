@@ -1,0 +1,416 @@
+---
+title: "From 1.5 Billion Records/Day to AI Agents: My 28-Year Engineering Arc"
+description: "From telecoms in 1998 to AI-augmented data engineering in 2026. What stayed the same, what changed completely, and what I wish I'd known earlier."
+category: "Career"
+date: 2026-04-10
+tags:
+  - "career"
+  - "retrospective"
+  - "data-engineering"
+  - "ai-engineering"
+published: true
+---
+
+
+
+
+            
+            <section class="content-section">
+                <p>In 1998, I walked into a telecom company in Rio de Janeiro as a trainee and sat down in front of a Sun workstation running Solaris. Java was barely three years old. The web was a curiosity, not a platform. Server-side rendering meant CGI scripts. Nobody had heard of "microservices" because everything was a monolith and nobody felt the need to name it.</p>
+                <p>I was twenty years old and I had no idea what I was doing.</p>
+                <p>The first thing I learned was that production systems are unforgiving. A billing system that crashes at 2 AM doesn't wait for you to finish your coffee. A database migration that corrupts call records doesn't care that it worked fine in staging. The gap between "it compiles" and "it runs reliably at scale, every day, for years" is vast, and that gap is where engineering actually lives.</p>
+                <p>Twenty-eight years later, that lesson hasn't changed. Everything else has.</p>
+                <p>This is the story of those twenty-eight years. Not a resume walkthrough — a reflection on what I learned, what I got wrong, and what I'd tell my younger self if I could.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The early years: widening the lens (1998&ndash;2006)</h2>
+                <p>The telecom company was formative in the way first jobs always are. I learned Java by building real systems that real people depended on. I learned SQL by writing queries against databases with millions of rows — which felt enormous at the time and laughably small in retrospect. I learned that the hardest bugs aren't the ones that crash your system; they're the ones that silently produce wrong answers for weeks before anyone notices.</p>
+                <p>From there I moved to a research institute, where the problems were completely different. Academic computing. Algorithms. Mathematical rigor applied to code. The institute taught me that understanding the underlying theory matters — not because you'll implement a red-black tree from scratch in production, but because knowing <em>why</em> a hash map is O(1) amortized changes how you think about system design.</p>
+                <p>Then came Germany. A role at an international telecom software company, building systems that needed to work across countries, languages, time zones, and regulatory frameworks. This was my first real experience with internationalization — not just translating strings, but designing systems that accommodate fundamentally different business rules depending on geography. A phone number in Brazil doesn't look like a phone number in Germany. A billing cycle in one country has legal constraints that don't exist in another.</p>
+                <p>After Germany, a stint at a global consulting firm. The consulting years taught me something I didn't expect: the difference between building systems and advising people who build systems. Both are valuable. But they use different muscles, and confusing the two is a common mistake.</p>
+                <p>The key lesson from those early years: <strong>the fundamentals never go out of style.</strong> Data structures, system design, debugging methodology, writing clear code. Languages change. Frameworks change. Cloud providers rise and fall. But the ability to reason about a system, trace a bug to its root cause, and design something that handles edge cases gracefully — that never expires. Every year that passes, I'm more grateful for the time I spent learning fundamentals instead of chasing the hot framework of the moment.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Timeline showing Bruno's 28-year engineering career from 1998 to 2026 across five eras">
+                        <defs>
+                            <style>{`
+                                .tl { font-family: 'JetBrains Mono', monospace; }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="300" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="298" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="tl" font-size="13" font-weight="600" fill="#ffffff">The 28-Year Arc</text>
+
+                        
+                        <line x1="40" y1="130" x2="720" y2="130" stroke="#1f2937" stroke-width="2"/>
+
+                        
+                        <rect x="40" y="108" width="160" height="44" rx="6" fill="rgba(100,116,139,0.15)" stroke="#525b6d" stroke-width="1.2"/>
+                        <text x="120" y="128" text-anchor="middle" class="tl" font-size="10" font-weight="600" fill="#8b93a3">Telecom &amp; Research</text>
+                        <text x="120" y="144" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">1998 &ndash; 2006</text>
+
+                        
+                        <rect x="210" y="108" width="130" height="44" rx="6" fill="rgba(100,116,139,0.2)" stroke="#525b6d" stroke-width="1.2"/>
+                        <text x="275" y="128" text-anchor="middle" class="tl" font-size="10" font-weight="600" fill="#8b93a3">Media Scale</text>
+                        <text x="275" y="144" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">2007 &ndash; 2012</text>
+
+                        
+                        <rect x="350" y="108" width="120" height="44" rx="6" fill="rgba(5, 150, 105,0.1)" stroke="#059669" stroke-width="1.2"/>
+                        <text x="410" y="128" text-anchor="middle" class="tl" font-size="10" font-weight="600" fill="#059669">Leadership</text>
+                        <text x="410" y="144" text-anchor="middle" class="tl" font-size="9" fill="#10b981">2012 &ndash; 2017</text>
+
+                        
+                        <rect x="480" y="108" width="130" height="44" rx="6" fill="rgba(5, 150, 105,0.18)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="545" y="128" text-anchor="middle" class="tl" font-size="10" font-weight="600" fill="#059669">Data Engineering</text>
+                        <text x="545" y="144" text-anchor="middle" class="tl" font-size="9" fill="#10b981">2017 &ndash; 2024</text>
+
+                        
+                        <rect x="620" y="104" width="100" height="52" rx="8" fill="rgba(5, 150, 105,0.25)" stroke="#059669" stroke-width="2"/>
+                        <text x="670" y="126" text-anchor="middle" class="tl" font-size="10" font-weight="600" fill="#059669">AI Integration</text>
+                        <text x="670" y="142" text-anchor="middle" class="tl" font-size="9" fill="#10b981">2024 &ndash; 2026</text>
+
+                        
+                        <line x1="40" y1="162" x2="40" y2="172" stroke="#525b6d" stroke-width="1"/>
+                        <text x="40" y="186" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">1998</text>
+
+                        <line x1="275" y1="162" x2="275" y2="172" stroke="#525b6d" stroke-width="1"/>
+                        <text x="275" y="186" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">2007</text>
+
+                        <line x1="410" y1="162" x2="410" y2="172" stroke="#525b6d" stroke-width="1"/>
+                        <text x="410" y="186" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">2012</text>
+
+                        <line x1="545" y1="162" x2="545" y2="172" stroke="#525b6d" stroke-width="1"/>
+                        <text x="545" y="186" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">2017</text>
+
+                        <line x1="670" y1="162" x2="670" y2="172" stroke="#525b6d" stroke-width="1"/>
+                        <text x="670" y="186" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">2024</text>
+
+                        <line x1="720" y1="162" x2="720" y2="172" stroke="#059669" stroke-width="1"/>
+                        <text x="720" y="186" text-anchor="middle" class="tl" font-size="9" fill="#059669">Now</text>
+
+                        
+                        <text x="120" y="212" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">Java, Solaris,</text>
+                        <text x="120" y="224" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">fundamentals</text>
+
+                        <text x="275" y="212" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">Millions of</text>
+                        <text x="275" y="224" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">users, first scale</text>
+
+                        <text x="410" y="212" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">Agency, consultancy,</text>
+                        <text x="410" y="224" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">people problems</text>
+
+                        <text x="545" y="212" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">Petabyte pipelines,</text>
+                        <text x="545" y="224" text-anchor="middle" class="tl" font-size="9" fill="#525b6d">data platforms</text>
+
+                        <text x="670" y="212" text-anchor="middle" class="tl" font-size="9" fill="#059669">MCP, agents,</text>
+                        <text x="670" y="224" text-anchor="middle" class="tl" font-size="9" fill="#059669">knowledge bases</text>
+
+                        
+                        <line x1="60" y1="260" x2="700" y2="260" stroke="#059669" stroke-width="1" stroke-dasharray="6,4"/>
+                        <polygon points="705,260 695,255 695,265" fill="#059669"/>
+                        <text x="380" y="280" text-anchor="middle" class="tl" font-size="10" fill="#8b93a3">Each era built on the one before it</text>
+                    </svg>
+                </div>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The media years: first taste of real scale (2007&ndash;2012)</h2>
+                <p>Five-plus years at Brazil's largest media company changed how I thought about systems. Before that, "scale" was an abstract concept I'd read about. At the media company, it was the daily reality.</p>
+                <p>Millions of concurrent users. Live event traffic spikes that could 10x your baseline in minutes. Content delivery systems that served video to a country of 200 million people. This was the era where I learned, deeply and painfully, that <strong>scale changes everything</strong>.</p>
+                <p>What works for a thousand users doesn't just slow down at a million users — it fails in fundamentally different ways. Caching strategies that make sense at small scale become consistency nightmares at large scale. Database patterns that are elegant for low concurrency become bottlenecks under high concurrency. Monitoring that's optional for a small system is existential for a large one — if you can't see it, you can't fix it, and at scale, things break constantly.</p>
+                <p>The media company also taught me about organizational scale. Hundreds of engineers. Dozens of teams. The coordination overhead of getting twenty teams to agree on an API contract or a deployment schedule was often harder than the technical problem itself. I started to understand that the biggest engineering problems aren't technical — they're communication problems wearing a technical costume.</p>
+                <p>One memory stands out. We were building a new content management platform, and two teams had been working on overlapping features for three months without realizing it. By the time someone noticed, both teams had shipped to staging. The merge was brutal — not because the code was bad (both implementations were solid), but because nobody had drawn a system boundary on a whiteboard and said "you own this, we own that." A thirty-minute meeting at the start would have saved three months of rework.</p>
+                <p>That experience stayed with me. Technical architecture without clear ownership boundaries is just a diagram. Ownership makes it real.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Leadership and consulting: different muscles (2012&ndash;2017)</h2>
+                <p>After the media company, I led a digital agency, founded my own consultancy, and took on consulting engagements across Brazil's tech scene. This was the period where I made the transition from "person who builds systems" to "person who leads the people who build systems" — and discovered, with some humility, that those are very different skills.</p>
+                <p>Being a good engineer doesn't make you a good leader. The skills barely overlap. As an engineer, you succeed by solving problems directly — you read the code, find the bug, fix the bug. As a leader, you succeed by creating the conditions where <em>other people</em> solve problems well. That means hiring, mentoring, prioritizing, unblocking, and making decisions with incomplete information. It means accepting that the team's solution might be different from what you would have built, and that's okay as long as it works.</p>
+                <p>The hardest part was letting go. I'd spent fifteen years getting good at solving technical problems directly. Suddenly, doing the work myself was the wrong move — my job was to make the team effective, not to be the hero who fixes everything at 2 AM. That transition took longer than I'd like to admit.</p>
+                <p>During this period, I consulted for a Brazilian e-commerce marketplace, and the hackathon story from that engagement taught me one of the most important lessons of my career. The company had a massive tech debt problem. Hundreds of open bugs. Uptime hovering around 92%. The engineering team was demoralized. Nobody wanted to work on bugs because the product roadmap was always more "urgent."</p>
+                <p>We organized a two-day hackathon focused entirely on bug squashing. Not a side project hackathon — a "let's fix as many bugs as we can" hackathon. The team squashed 70% of the outstanding bugs in two days. Uptime went from 92% to 99% in the following weeks. But the real lesson wasn't about hackathons. It was about <strong>permission</strong>. The team <em>knew</em> the bugs were important. They <em>wanted</em> to fix them. They just needed someone to say "yes, this is what we're doing for the next two days, the product roadmap can wait." The biggest engineering problems are often cultural, not technical. The code was never the hard part.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The data engineering chapter: the pivot (2017&ndash;2024)</h2>
+                <p>Around 2017, I made a deliberate pivot into data engineering. It wasn't a random career move — it was a bet on where I thought the industry was going. Data was becoming the center of gravity for every serious technology company, and the people who could build reliable, scalable data systems were in short supply.</p>
+                <p>The pivot took me through some of the most intense engineering work of my career.</p>
+                <p>First, a fintech payments company. Building the data infrastructure for a company that moves money is a different kind of engineering. Every number has to be exactly right. "Eventually consistent" isn't acceptable when you're reconciling financial transactions. The lesson: <strong>correctness beats performance.</strong> A slow system that produces accurate numbers is infinitely more valuable than a fast system that's wrong by 0.1%.</p>
+                <p>Then, a top-10 ad tech platform. This is where petabyte scale became real. 1.5 billion records per day flowing through pipelines I helped design and maintain. Spark jobs processing terabytes in single runs. Cost optimization wasn't a nice-to-have — it was existential. When your monthly compute bill is in the hundreds of thousands, a 5% efficiency improvement pays for an engineer's salary. I reduced one major pipeline's cost by 40% through partition strategy optimization and careful Spark tuning. The lesson: <strong>the best pipeline is the one that's boring.</strong> Reliable. Predictable. Maintainable. Nobody calls you at 3 AM about a boring pipeline.</p>
+                <p>After ad tech, a global travel platform. Building data systems for a company that operates in dozens of countries, each with different data privacy laws, currency formats, and business rules. This was internationalization all over again — but now with data. A user in Europe has GDPR rights that a user in Brazil doesn't (Brazil has LGPD, which is similar but not identical). Your data platform needs to handle all of this without turning into a special-case nightmare.</p>
+                <p>Then came a logistics startup, where I built a complete data platform from zero. No existing infrastructure. No data team. Just a fast-growing company that needed to make data-driven decisions and had no way to do it. I designed the architecture, built the pipelines, set up the warehouse, created the dashboards, and then trained the team that would maintain it after I left. Starting from nothing taught me that the <em>order</em> in which you build things matters as much as what you build. Get the foundation wrong and everything built on top wobbles.</p>
+                <p>A major web services provider rounded out this era. Different scale, different challenges, same fundamentals. Every engagement reinforced the same pattern: the technical problems are solvable. The hard parts are understanding the business context, defining clear ownership, and building systems that humans can actually maintain.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The AI chapter: amplifying judgment (2024&ndash;2026)</h2>
+                <p>The most recent chapter started in 2024, integrating AI agents into data workflows at a major B2B data platform. This is where everything I'd learned over 26 years converged with a technology wave that I believe will be as transformative as the internet was in the late 1990s.</p>
+                <p>The work involved <a href="/posts/mcp-agentic-workflows-guardrails">Model Context Protocol (MCP)</a>, agentic workflows, guardrails for production AI systems, and the <a href="/posts/knowledge-base-as-agentic-memory">knowledge base pattern</a> — giving AI agents a structured, persistent memory about your architecture and decisions so they can produce plans that are actually useful instead of technically plausible but architecturally naive.</p>
+                <p>Here's what I've learned so far about AI in production engineering:</p>
+                <p><strong>AI doesn't replace engineers. It amplifies their judgment.</strong> An AI agent with access to your codebase can generate code faster than any human. But the code it generates is only as good as the context it has. Without understanding <em>why</em> your system is built the way it is, what constraints shaped the architecture, what failed in the past — the agent produces work that looks right but misses the point. The value isn't the AI itself. It's the <strong>context infrastructure</strong> you build around it.</p>
+                <p>This is why I've been writing about <a href="/posts/ai-agents-in-data-pipelines">AI agents in data pipelines</a> and <a href="/posts/building-data-platform-from-zero">building data platforms</a> — because the foundational engineering work of structuring data, defining clear ownership, and documenting decisions becomes <em>more</em> important in an AI-augmented world, not less. AI makes good infrastructure more valuable and bad infrastructure more dangerous.</p>
+                <p>The teams that will benefit most from AI aren't the ones with the fanciest models. They're the ones with the best-organized knowledge, the clearest system boundaries, and the most discipline about documenting decisions. Twenty-eight years of building production systems taught me that infrastructure matters. AI makes that lesson ten times more urgent.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>What stayed the same across 28 years</h2>
+                <p>Some things don't change. After nearly three decades, four principles have held up through every technology wave, every company, every scale.</p>
+
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four pillars showing constants across 28 years of engineering: Production is unforgiving, Fundamentals don't expire, Hardest problems are human, Simplicity wins">
+                        <defs>
+                            <style>{`
+                                .pl { font-family: 'JetBrains Mono', monospace; }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="280" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="278" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="pl" font-size="13" font-weight="600" fill="#ffffff">The Constants</text>
+
+                        
+                        <line x1="40" y1="230" x2="720" y2="230" stroke="#059669" stroke-width="2"/>
+                        <text x="380" y="256" text-anchor="middle" class="pl" font-size="10" fill="#8b93a3">These held true from 1998 to 2026 &mdash; and will hold true beyond</text>
+
+                        
+                        <rect x="55" y="60" width="150" height="170" rx="8" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <rect x="55" y="60" width="150" height="36" rx="8" fill="rgba(5, 150, 105,0.15)"/>
+                        <rect x="55" y="88" width="150" height="8" rx="0" fill="rgba(5, 150, 105,0.15)"/>
+                        <text x="130" y="84" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#059669">I</text>
+                        <text x="130" y="118" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">Production is</text>
+                        <text x="130" y="132" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">unforgiving</text>
+                        <text x="130" y="160" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">What works in dev</text>
+                        <text x="130" y="174" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">breaks in prod.</text>
+                        <text x="130" y="188" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">Always has,</text>
+                        <text x="130" y="202" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">always will.</text>
+
+                        
+                        <rect x="225" y="60" width="150" height="170" rx="8" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <rect x="225" y="60" width="150" height="36" rx="8" fill="rgba(5, 150, 105,0.15)"/>
+                        <rect x="225" y="88" width="150" height="8" rx="0" fill="rgba(5, 150, 105,0.15)"/>
+                        <text x="300" y="84" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#059669">II</text>
+                        <text x="300" y="118" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">Fundamentals</text>
+                        <text x="300" y="132" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">don't expire</text>
+                        <text x="300" y="160" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">Data structures,</text>
+                        <text x="300" y="174" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">system design,</text>
+                        <text x="300" y="188" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">debugging. The</text>
+                        <text x="300" y="202" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">rest is fashion.</text>
+
+                        
+                        <rect x="395" y="60" width="150" height="170" rx="8" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <rect x="395" y="60" width="150" height="36" rx="8" fill="rgba(5, 150, 105,0.15)"/>
+                        <rect x="395" y="88" width="150" height="8" rx="0" fill="rgba(5, 150, 105,0.15)"/>
+                        <text x="470" y="84" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#059669">III</text>
+                        <text x="470" y="118" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">Hardest problems</text>
+                        <text x="470" y="132" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">are human</text>
+                        <text x="470" y="160" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">Communication,</text>
+                        <text x="470" y="174" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">ownership, trust.</text>
+                        <text x="470" y="188" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">Fix those and the</text>
+                        <text x="470" y="202" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">code follows.</text>
+
+                        
+                        <rect x="565" y="60" width="150" height="170" rx="8" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <rect x="565" y="60" width="150" height="36" rx="8" fill="rgba(5, 150, 105,0.15)"/>
+                        <rect x="565" y="88" width="150" height="8" rx="0" fill="rgba(5, 150, 105,0.15)"/>
+                        <text x="640" y="84" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#059669">IV</text>
+                        <text x="640" y="118" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">Simplicity</text>
+                        <text x="640" y="132" text-anchor="middle" class="pl" font-size="10" font-weight="600" fill="#ffffff">wins</text>
+                        <text x="640" y="160" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">The clever solution</text>
+                        <text x="640" y="174" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">impresses today.</text>
+                        <text x="640" y="188" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">The simple one</text>
+                        <text x="640" y="202" text-anchor="middle" class="pl" font-size="9" fill="#525b6d">survives tomorrow.</text>
+                    </svg>
+                </div>
+
+                <p><strong>Production is unforgiving.</strong> This was the first lesson in 1998 and it's still the first lesson in 2026. The gap between "works on my machine" and "works reliably in production, at scale, every day" is where all the real engineering happens. This hasn't changed with cloud, containers, Kubernetes, or AI. If anything, the blast radius of a production failure has gotten larger.</p>
+                <p><strong>The fundamentals never expire.</strong> I've watched dozens of frameworks rise and fall. jQuery, Backbone, Angular 1, CoffeeScript, MapReduce — all were "essential" at some point, all are either dead or diminished. But binary search still works. Hash tables are still O(1). The CAP theorem still applies. TCP still does what TCP does. If you invest in fundamentals early, you can learn any framework in weeks. If you only learn frameworks, you're stuck re-learning from scratch every few years.</p>
+                <p><strong>The hardest problems are people problems.</strong> Every technical challenge I've encountered over 28 years was eventually solvable with enough time and talent. But miscommunication between teams? Unclear ownership? Trust deficits? Organizational inertia? Those problems killed more projects than any technical limitation ever did. The hackathon story is the clearest example — the team had the skills, the code was fixable, the only thing missing was permission to focus on it.</p>
+                <p><strong>Simplicity wins every time.</strong> Junior engineers build complex systems to prove they can. Senior engineers build simple systems because they've maintained the complex ones. The clever optimization that saves 3% of compute but requires a PhD to debug is almost never worth it. The boring, obvious, well-documented solution that any engineer on the team can understand and maintain — that's the one that survives. I've seen too many "elegant" architectures crumble under the weight of their own complexity.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>What changed completely</h2>
+
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 340" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four transformation arrows showing what changed: scale from thousands to billions, servers to cloud, manual to AI-augmented, office to global remote">
+                        <defs>
+                            <style>{`
+                                .ch { font-family: 'JetBrains Mono', monospace; }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="340" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="338" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="ch" font-size="13" font-weight="600" fill="#ffffff">What Changed</text>
+
+                        
+                        <rect x="50" y="56" width="180" height="50" rx="8" fill="rgba(100,116,139,0.15)" stroke="#525b6d" stroke-width="1.2"/>
+                        <text x="140" y="78" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#8b93a3">Thousands</text>
+                        <text x="140" y="96" text-anchor="middle" class="ch" font-size="9" fill="#525b6d">of users, rows, requests</text>
+
+                        <line x1="240" y1="81" x2="510" y2="81" stroke="#059669" stroke-width="1.5" stroke-dasharray="8,4"/>
+                        <polygon points="515,81 505,76 505,86" fill="#059669"/>
+                        <text x="375" y="72" text-anchor="middle" class="ch" font-size="10" font-weight="500" fill="#059669">Scale</text>
+
+                        <rect x="520" y="56" width="190" height="50" rx="8" fill="rgba(5, 150, 105,0.12)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="615" y="78" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#059669">Billions</text>
+                        <text x="615" y="96" text-anchor="middle" class="ch" font-size="9" fill="#10b981">1.5B records/day, petabytes</text>
+
+                        
+                        <rect x="50" y="122" width="180" height="50" rx="8" fill="rgba(100,116,139,0.15)" stroke="#525b6d" stroke-width="1.2"/>
+                        <text x="140" y="144" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#8b93a3">Bare Metal</text>
+                        <text x="140" y="162" text-anchor="middle" class="ch" font-size="9" fill="#525b6d">Racked servers, Solaris, colo</text>
+
+                        <line x1="240" y1="147" x2="510" y2="147" stroke="#34d399" stroke-width="1.5" stroke-dasharray="8,4"/>
+                        <polygon points="515,147 505,142 505,152" fill="#34d399"/>
+                        <text x="375" y="138" text-anchor="middle" class="ch" font-size="10" font-weight="500" fill="#34d399">Infrastructure</text>
+
+                        <rect x="520" y="122" width="190" height="50" rx="8" fill="rgba(52, 211, 153,0.1)" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="615" y="144" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#34d399">Cloud</text>
+                        <text x="615" y="162" text-anchor="middle" class="ch" font-size="9" fill="#525b6d">Elastic, on-demand, global</text>
+
+                        
+                        <rect x="50" y="188" width="180" height="50" rx="8" fill="rgba(100,116,139,0.15)" stroke="#525b6d" stroke-width="1.2"/>
+                        <text x="140" y="210" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#8b93a3">Manual</text>
+                        <text x="140" y="228" text-anchor="middle" class="ch" font-size="9" fill="#525b6d">Every line written by hand</text>
+
+                        <line x1="240" y1="213" x2="510" y2="213" stroke="#059669" stroke-width="1.5" stroke-dasharray="8,4"/>
+                        <polygon points="515,213 505,208 505,218" fill="#059669"/>
+                        <text x="375" y="204" text-anchor="middle" class="ch" font-size="10" font-weight="500" fill="#059669">Tools</text>
+
+                        <rect x="520" y="188" width="190" height="50" rx="8" fill="rgba(5, 150, 105,0.12)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="615" y="210" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#059669">AI-Augmented</text>
+                        <text x="615" y="228" text-anchor="middle" class="ch" font-size="9" fill="#10b981">Agents, copilots, MCP</text>
+
+                        
+                        <rect x="50" y="254" width="180" height="50" rx="8" fill="rgba(100,116,139,0.15)" stroke="#525b6d" stroke-width="1.2"/>
+                        <text x="140" y="276" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#8b93a3">Office</text>
+                        <text x="140" y="294" text-anchor="middle" class="ch" font-size="9" fill="#525b6d">Same city, same building</text>
+
+                        <line x1="240" y1="279" x2="510" y2="279" stroke="#34d399" stroke-width="1.5" stroke-dasharray="8,4"/>
+                        <polygon points="515,279 505,274 505,284" fill="#34d399"/>
+                        <text x="375" y="270" text-anchor="middle" class="ch" font-size="10" font-weight="500" fill="#34d399">Work</text>
+
+                        <rect x="520" y="254" width="190" height="50" rx="8" fill="rgba(52, 211, 153,0.1)" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="615" y="276" text-anchor="middle" class="ch" font-size="11" font-weight="600" fill="#34d399">Global Remote</text>
+                        <text x="615" y="294" text-anchor="middle" class="ch" font-size="9" fill="#525b6d">Async, distributed, worldwide</text>
+
+                        
+                        <text x="380" y="328" text-anchor="middle" class="ch" font-size="10" fill="#8b93a3">The landscape today would be unrecognizable to the engineer I was in 1998</text>
+                    </svg>
+                </div>
+
+                <p><strong>Scale went from thousands to billions.</strong> In 1998, a million rows in a database was a serious production system. Today I've built pipelines that process 1.5 billion records per day, and that's not even exceptional by modern standards. The tools, techniques, and mindset required at each scale are so different they're almost different professions. But the core skill — reasoning clearly about how data flows through a system — is the same at every scale.</p>
+                <p><strong>Cloud changed everything about infrastructure.</strong> When I started, getting a new server meant a purchase order, a 6-week lead time, and a trip to the data center. Today I can spin up a cluster of a hundred machines in minutes, run a computation, and tear it down before lunch. This changed not just how we build systems, but what we <em>imagine</em> building. Entire categories of application that were unthinkable in the server-rack era are trivial in the cloud era.</p>
+                <p><strong>AI is the biggest shift since the internet.</strong> I was there when the web went from curiosity to platform. I'm watching AI make the same transition now, and the parallels are striking. In 1998, people asked "but what would you actually <em>use</em> a website for?" Today, people ask "but what would you actually use an AI agent for?" The answer, in both cases, is: things you haven't imagined yet. The teams building the infrastructure now will define the categories later.</p>
+                <p><strong>Remote work opened the world.</strong> For the first half of my career, working for an international company meant moving to another country. Today I work with teams across continents from my home office. This isn't just a convenience — it fundamentally changed who gets access to opportunity. A talented engineer in Recife can work for a company in San Francisco without leaving their family. That's a profound change, and we're still figuring out the implications.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>What I wish I'd known earlier</h2>
+                <p>If I could go back and give my 20-year-old self some advice — knowing he'd probably ignore most of it — here's what I'd say:</p>
+                <p><strong>Specialize earlier.</strong> Breadth is good. I'm glad I did telecom, research, media, consulting, fintech, ad tech, and travel. Each domain taught me something the others couldn't. But depth is where the value is. The moment I specialized in data engineering, my career trajectory changed. I went from "good generalist" to "the person you call when you need to build a data platform that actually works." Breadth gave me perspective. Depth gave me leverage. I wish I'd found my depth sooner.</p>
+                <p><strong>Write more, earlier.</strong> I started writing publicly very late. This blog exists because I finally realized that the compound interest on ideas only works if you put them <em>out there</em>. Every article I write clarifies my thinking. Every concept I explain forces me to understand it more deeply. Writing is not a side activity for engineers — it's a core skill. The best engineers I've worked with were all good writers. Not a coincidence.</p>
+                <p><strong>Build in public sooner.</strong> Related to writing, but broader. Open-sourcing tools, sharing architectures, writing about failures. The network effect of sharing your work is enormous. People find you. Opportunities appear. Collaborators emerge. For years I built things in private, inside companies, behind NDAs. That work was valuable, but invisible. The work I've shared publicly in the last two years has generated more professional opportunities than the previous ten years of private work combined.</p>
+                <p><strong>The best career move is solving real problems, not chasing titles.</strong> I wasted time early in my career thinking about titles. Senior engineer. Tech lead. Architect. Director. The title game is a distraction. The actual career accelerator is being the person who solves hard problems. Not the person with the impressive title, but the person people call when something is broken and needs to work. Solve enough hard problems and the titles follow — and by then, you've stopped caring about them.</p>
+                <p><strong>Invest in relationships.</strong> The most valuable thing from 28 years isn't any technology I learned. It's the people I worked with. Former colleagues who became co-founders. Mentors who opened doors. Engineers I managed who later hired me as a consultant. Your network isn't a LinkedIn connection count — it's the set of people who know your work and trust your judgment. Build that deliberately.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Where it all leads: the stack I work with today</h2>
+                <p>Everything I've learned over 28 years converges into the work I do now. Here's how the pieces fit together:</p>
+
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Stack diagram showing Knowledge Base, MCP, AI Agents, and Data Platform as interconnected layers">
+                        <defs>
+                            <style>{`
+                                .st { font-family: 'JetBrains Mono', monospace; }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="360" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="358" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="st" font-size="13" font-weight="600" fill="#ffffff">The Full Picture</text>
+
+                        
+                        <rect x="60" y="260" width="640" height="62" rx="10" fill="rgba(100,116,139,0.12)" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="380" y="286" text-anchor="middle" class="st" font-size="12" font-weight="600" fill="#8b93a3">Data Platform</text>
+                        <text x="380" y="306" text-anchor="middle" class="st" font-size="9" fill="#525b6d">Pipelines, warehouses, orchestration, monitoring &mdash; the systems</text>
+
+                        
+                        <rect x="60" y="186" width="300" height="58" rx="10" fill="rgba(5, 150, 105,0.12)" stroke="#059669" stroke-width="2"/>
+                        <text x="210" y="212" text-anchor="middle" class="st" font-size="12" font-weight="600" fill="#059669">Knowledge Base</text>
+                        <text x="210" y="230" text-anchor="middle" class="st" font-size="9" fill="#10b981">Architecture decisions, history, context</text>
+
+                        
+                        <rect x="400" y="186" width="300" height="58" rx="10" fill="rgba(52, 211, 153,0.1)" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="550" y="212" text-anchor="middle" class="st" font-size="12" font-weight="600" fill="#34d399">MCP</text>
+                        <text x="550" y="230" text-anchor="middle" class="st" font-size="9" fill="#525b6d">Live context, tool access, guardrails</text>
+
+                        
+                        <rect x="180" y="108" width="400" height="58" rx="10" fill="#1f2937" stroke="#059669" stroke-width="1.5"/>
+                        <text x="380" y="134" text-anchor="middle" class="st" font-size="12" font-weight="600" fill="#ffffff">AI Agents</text>
+                        <text x="380" y="152" text-anchor="middle" class="st" font-size="9" fill="#8b93a3">Planning, code generation, analysis, automation</text>
+
+                        
+                        <line x1="310" y1="166" x2="240" y2="186" stroke="#059669" stroke-width="1.2" stroke-dasharray="6,4"/>
+                        <polygon points="240,186 248,179 244,190" fill="#059669"/>
+
+                        
+                        <line x1="450" y1="166" x2="520" y2="186" stroke="#34d399" stroke-width="1.2" stroke-dasharray="6,4"/>
+                        <polygon points="520,186 516,176 512,187" fill="#34d399"/>
+
+                        
+                        <line x1="210" y1="244" x2="260" y2="260" stroke="#059669" stroke-width="1" stroke-dasharray="4,3"/>
+                        <polygon points="260,260 254,252 250,262" fill="#059669"/>
+
+                        
+                        <line x1="550" y1="244" x2="500" y2="260" stroke="#34d399" stroke-width="1" stroke-dasharray="4,3"/>
+                        <polygon points="500,260 506,252 510,262" fill="#34d399"/>
+
+                        
+                        <text x="380" y="80" text-anchor="middle" class="st" font-size="10" fill="#525b6d">28 years of engineering judgment, structured for machines</text>
+
+                        
+                        <text x="380" y="345" text-anchor="middle" class="st" font-size="10" fill="#8b93a3">AI Agents are only as good as the context and infrastructure beneath them</text>
+                    </svg>
+                </div>
+
+                <p>The <strong>Data Platform</strong> is the foundation — the <a href="/posts/building-data-platform-from-zero">pipelines, warehouses, and orchestration</a> that make data reliable and accessible. This is where 28 years of building production systems pays off most directly.</p>
+                <p>The <strong>Knowledge Base</strong> is the institutional memory — a <a href="/posts/knowledge-base-as-agentic-memory">structured, LLM-maintained wiki</a> that captures architecture decisions, failure patterns, domain concepts, and system topology. Without this, AI agents are smart but architecturally naive.</p>
+                <p><strong>MCP</strong> (Model Context Protocol) is the live context layer — <a href="/posts/mcp-agentic-workflows-guardrails">the protocol that gives agents access to your tools, databases, and services</a> with proper guardrails. It's the runtime complement to the knowledge base's compile-time context.</p>
+                <p>And <strong>AI Agents</strong> sit on top — <a href="/posts/ai-agents-in-data-pipelines">integrated into data workflows</a> where they can plan, generate, analyze, and automate. But they only work well because the layers beneath them are solid.</p>
+                <p>This stack isn't a theoretical framework. It's what I actually build for clients. And every layer draws on lessons from a different part of those 28 years. The data platform draws on the media-scale and ad-tech years. The knowledge base draws on the consulting years, where I learned how much institutional knowledge matters. MCP and the agent layer draw on the most recent work. The whole thing only makes sense because of the breadth of experience underneath it.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>What's next</h2>
+                <p>I'm building Mentges.AI. The thesis is simple: most teams need help integrating AI into their data workflows, and that help needs to come from someone who's actually built production data systems — not from someone who's read about them.</p>
+                <p>The work has three parts:</p>
+                <p><strong>Consulting.</strong> Helping teams design and implement the full stack — data platforms, knowledge bases, agentic workflows, MCP integrations. Hands-on, embedded work. Not slide decks and strategy documents. Actual systems that ship to production.</p>
+                <p><strong>Writing.</strong> This blog. Thinking in public about data engineering, AI integration, and the craft of building systems that last. Every article I write compounds into the next one. The <a href="/posts/knowledge-base-as-agentic-memory">knowledge base article</a> informed the <a href="/posts/mcp-agentic-workflows-guardrails">MCP article</a>, which informed the <a href="/posts/ai-agents-in-data-pipelines">agents-in-pipelines article</a>, which informed this one. Writing is how I think.</p>
+                <p><strong>Open source.</strong> The <a href="https://github.com/bmentges/knowledge-base-template" target="_blank" rel="noopener">knowledge base template</a> is the first piece. More tools and templates are coming — things I build for client work that are general enough to share. Open source is how I give back to the community that taught me everything I know.</p>
+                <p>If you had told the 20-year-old trainee at that telecom company in Rio de Janeiro that in 28 years he'd be building AI-augmented data platforms for companies across the world, from a home office, writing about it publicly, and open-sourcing the tools — he wouldn't have believed you. Not because it sounded too ambitious, but because most of it hadn't been invented yet.</p>
+                <p>That's the thing about a long career in technology. You don't just witness the changes. You build on them. Each era gives you tools and lessons that make the next era's challenges tractable. The telecom years taught me production discipline. The media years taught me scale. The consulting years taught me people. The data engineering years taught me the craft. And the AI era is teaching me that all of it was preparation for something bigger than any individual piece.</p>
+                <p>Twenty-eight years in, I'm more excited about engineering than I've ever been. Not because AI is flashy — it is, but that wears off. Because for the first time, the accumulated knowledge of an entire career can be structured, indexed, and made useful to machines. Every lesson I learned the hard way can now be encoded in a knowledge base that makes AI agents smarter. Every pattern I recognized across five companies can be documented in a template that helps the next person skip the mistakes I made.</p>
+                <p>The best time to start building was 1998. The second best time is now.</p>
+            </section>

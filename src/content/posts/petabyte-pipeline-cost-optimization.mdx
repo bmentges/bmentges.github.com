@@ -1,0 +1,497 @@
+---
+title: "How I Reduced a Petabyte Pipeline's Cost by 40%"
+description: "Performance engineering at scale isn't about clever tricks — it's about understanding economics. A case study in Spark optimization, partition strategy, and thinking in dollars instead of milliseconds."
+category: "Data Engineering"
+date: 2026-04-12
+tags:
+  - "spark"
+  - "optimization"
+  - "cost"
+  - "petabyte-scale"
+published: true
+---
+
+
+
+
+            
+            <section class="content-section">
+                <p>At a top-10 ad tech platform processing 1.5 billion records per day, the cloud bill was becoming an existential concern. Not because the pipelines were broken — they worked. Data arrived on time, transformations were correct, downstream systems were fed. The problem was simpler and more dangerous: costs were growing faster than revenue.</p>
+                <p>The platform ran hundreds of Spark jobs across dozens of EMR clusters, processing petabytes of ad impression, click, and conversion data. Every day, these pipelines ingested raw event streams, enriched them with audience segments and campaign metadata, computed attribution models, and produced the reporting tables that powered billing and analytics. The infrastructure bill was north of seven figures annually — and climbing 15-20% quarter over quarter while revenue grew at 10%.</p>
+                <p>Leadership asked a straightforward question: "Can we cut 30% without breaking anything?"</p>
+                <p>I delivered 40%. Not through a single breakthrough, but through a systematic approach that treated every pipeline decision as an economic one. This is how.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Thinking in dollars, not milliseconds</h2>
+                <p>The first thing I had to unlearn — and help the team unlearn — was the instinct to optimize for speed. In traditional software engineering, performance means latency. Faster is better. But at petabyte scale, faster is not always cheaper. Sometimes the fastest pipeline is the most expensive one, because it achieves speed by throwing compute at the problem.</p>
+                <p>Consider a Spark job that processes a day's worth of impression data. You can run it on 200 nodes and finish in 15 minutes, or on 50 nodes and finish in 45 minutes. The first option costs 4x more in compute but delivers the same result with the same downstream SLA. If your SLA is "data available by 8 AM" and both options finish before 8 AM, you're paying a 4x premium for speed nobody needs.</p>
+                <p>This mental shift — from "how fast can this run?" to "what's the cheapest way to meet the SLA?" — was the foundation of everything that followed. Every optimization decision became an economics question: what does this cost, what does the alternative cost, and what's the actual business constraint?</p>
+                <p>I built a cost model that attached a dollar figure to every major pipeline. Not just the compute bill — the full cost: compute, storage, data transfer, failed-run waste, and the engineering time spent babysitting unstable jobs. When you see that a single poorly-partitioned join is responsible for $14,000/month in shuffle-related compute, the optimization priority becomes obvious.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The four levers</h2>
+                <p>After profiling every major pipeline and mapping costs to root causes, four optimization levers emerged. They aren't equally weighted — partition strategy was the single biggest lever, responsible for nearly half the total savings. But all four compound together.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Four cost optimization levers: Partition Strategy, Storage Optimization, Cluster Right-Sizing, Pipeline Refactoring">
+                        <defs>
+                            <style>{`
+                                .lv { font-family: 'JetBrains Mono', monospace; }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="420" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="418" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="lv" font-size="14" font-weight="600" fill="#ffffff">The Four Cost Levers</text>
+                        <text x="380" y="50" text-anchor="middle" class="lv" font-size="10" fill="#525b6d">Ranked by impact — partition strategy dominates</text>
+
+                        
+                        <rect x="55" y="80" width="150" height="290" rx="10" fill="rgba(5, 150, 105,0.12)" stroke="#059669" stroke-width="2"/>
+                        <text x="130" y="108" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#059669">Partition</text>
+                        <text x="130" y="124" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#059669">Strategy</text>
+                        <line x1="80" y1="136" x2="180" y2="136" stroke="rgba(5, 150, 105,0.3)" stroke-width="1"/>
+
+                        
+                        <rect x="80" y="148" width="100" height="14" rx="3" fill="rgba(5, 150, 105,0.15)" stroke="rgba(5, 150, 105,0.3)" stroke-width="1"/>
+                        <rect x="80" y="148" width="100" height="14" rx="3" fill="#059669" opacity="0.7"/>
+                        <text x="130" y="180" text-anchor="middle" class="lv" font-size="9" font-weight="600" fill="#059669">~45% of savings</text>
+
+                        <text x="130" y="206" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">Wrong partition keys</text>
+                        <text x="130" y="222" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">cause shuffle</text>
+                        <text x="130" y="238" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">explosions.</text>
+                        <text x="130" y="262" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">Rebalance based</text>
+                        <text x="130" y="278" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">on actual data</text>
+                        <text x="130" y="294" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">distribution, not</text>
+                        <text x="130" y="310" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">assumptions.</text>
+
+                        
+                        <line x1="105" y1="340" x2="130" y2="350" stroke="#059669" stroke-width="1.5"/>
+                        <line x1="155" y1="340" x2="130" y2="350" stroke="#059669" stroke-width="1.5"/>
+                        <line x1="130" y1="350" x2="105" y2="360" stroke="#059669" stroke-width="1.5"/>
+                        <line x1="130" y1="350" x2="155" y2="360" stroke="#059669" stroke-width="1.5"/>
+
+                        
+                        <rect x="225" y="130" width="150" height="240" rx="10" fill="rgba(52, 211, 153,0.06)" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="300" y="158" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#34d399">Storage</text>
+                        <text x="300" y="174" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#34d399">Optimization</text>
+                        <line x1="250" y1="186" x2="350" y2="186" stroke="rgba(52, 211, 153,0.2)" stroke-width="1"/>
+
+                        <rect x="250" y="198" width="100" height="14" rx="3" fill="rgba(52, 211, 153,0.15)" stroke="rgba(52, 211, 153,0.3)" stroke-width="1"/>
+                        <rect x="250" y="198" width="70" height="14" rx="3" fill="#34d399" opacity="0.5"/>
+                        <text x="300" y="230" text-anchor="middle" class="lv" font-size="9" font-weight="600" fill="#34d399">~25% of savings</text>
+
+                        <text x="300" y="256" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">Columnar formats,</text>
+                        <text x="300" y="272" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">compression,</text>
+                        <text x="300" y="288" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">lifecycle policies,</text>
+                        <text x="300" y="304" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">tiered storage.</text>
+
+                        
+                        <rect x="282" y="330" width="36" height="8" rx="2" fill="rgba(52, 211, 153,0.3)" stroke="#34d399" stroke-width="0.8"/>
+                        <rect x="286" y="342" width="28" height="8" rx="2" fill="rgba(52, 211, 153,0.2)" stroke="#34d399" stroke-width="0.8"/>
+                        <rect x="290" y="354" width="20" height="8" rx="2" fill="rgba(52, 211, 153,0.1)" stroke="#34d399" stroke-width="0.8"/>
+
+                        
+                        <rect x="395" y="170" width="150" height="200" rx="10" fill="rgba(42,58,82,0.5)" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="470" y="198" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#e8ecf1">Cluster</text>
+                        <text x="470" y="214" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#e8ecf1">Right-Sizing</text>
+                        <line x1="420" y1="226" x2="520" y2="226" stroke="rgba(100,116,139,0.3)" stroke-width="1"/>
+
+                        <rect x="420" y="238" width="100" height="14" rx="3" fill="rgba(100,116,139,0.15)" stroke="#525b6d" stroke-width="1"/>
+                        <rect x="420" y="238" width="50" height="14" rx="3" fill="#525b6d" opacity="0.5"/>
+                        <text x="470" y="270" text-anchor="middle" class="lv" font-size="9" font-weight="600" fill="#8b93a3">~20% of savings</text>
+
+                        <text x="470" y="296" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">Spot instances,</text>
+                        <text x="470" y="312" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">autoscaling,</text>
+                        <text x="470" y="328" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">compute vs memory</text>
+                        <text x="470" y="344" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">right-sizing.</text>
+
+                        
+                        <rect x="565" y="210" width="150" height="160" rx="10" fill="rgba(42,58,82,0.3)" stroke="#1f2937" stroke-width="1.5"/>
+                        <text x="640" y="238" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#8b93a3">Pipeline</text>
+                        <text x="640" y="254" text-anchor="middle" class="lv" font-size="12" font-weight="600" fill="#8b93a3">Refactoring</text>
+                        <line x1="590" y1="266" x2="690" y2="266" stroke="rgba(42,58,82,0.5)" stroke-width="1"/>
+
+                        <rect x="590" y="278" width="100" height="14" rx="3" fill="rgba(42,58,82,0.2)" stroke="#1f2937" stroke-width="1"/>
+                        <rect x="590" y="278" width="30" height="14" rx="3" fill="#1f2937" opacity="0.8"/>
+                        <text x="640" y="310" text-anchor="middle" class="lv" font-size="9" font-weight="600" fill="#525b6d">~10% of savings</text>
+
+                        <text x="640" y="336" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">Split monoliths</text>
+                        <text x="640" y="352" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">into restartable</text>
+                        <text x="640" y="368" text-anchor="middle" class="lv" font-size="9.5" fill="#8b93a3">stages.</text>
+
+                        
+                        <text x="380" y="403" text-anchor="middle" class="lv" font-size="10" fill="#525b6d">Four levers, not equally weighted. Start with partition strategy — it's nearly half the win.</text>
+                    </svg>
+                </div>
+
+                <h3>Lever 1: Partition strategy</h3>
+                <p>This was the single biggest win. The platform's pipelines had been built over years by different teams, each choosing partition keys based on intuition rather than data distribution analysis. The attribution pipeline — the most expensive job in the fleet — partitioned by advertiser ID. Reasonable in theory: you want to group all events for a given advertiser together for attribution computation.</p>
+                <p>The problem was that data distribution across advertisers followed a severe power law. The top 50 advertisers generated 40% of all impression volume. This meant that during the shuffle phase, a handful of partitions were 100x larger than the median. Those oversized partitions bottlenecked the entire job. Spark would finish 95% of tasks in 10 minutes, then spend another 40 minutes waiting for the few stragglers processing the giant partitions. The cluster sat mostly idle during that tail, burning compute for nothing.</p>
+                <p>The fix was a composite partition key: advertiser ID combined with a time bucket. For large advertisers, we subdivided their data into hourly chunks. For small advertisers, daily was fine. The shuffle volume dropped by 60%, and the job runtime went from 50 minutes to 18 minutes on the same cluster — or alternatively, we could run it on a smaller cluster in 30 minutes and cut compute costs by 55%.</p>
+
+                <h3>Lever 2: Storage optimization</h3>
+                <p>The platform stored intermediate data in row-oriented formats in several pipelines — a holdover from an era when the jobs were originally written. Switching to columnar storage with aggressive compression reduced storage footprint by 70% for those datasets. But the bigger win wasn't the storage bill itself — it was the read performance. Columnar formats with partition pruning meant that downstream jobs could read only the columns they needed, reducing I/O by 3-5x. Less I/O means shorter runtimes, which means less compute.</p>
+                <p>We also implemented lifecycle policies that moved data through storage tiers: hot storage for the last 7 days (frequently accessed for debugging and reprocessing), warm storage for 8-90 days, and cold archive beyond that. The raw event data alone was consuming significant storage spend on hot storage when 95% of it was never accessed after the first week.</p>
+
+                <h3>Lever 3: Cluster right-sizing</h3>
+                <p>Most teams over-provision by 2-3x. It's a rational behavior: if a job fails because the cluster was too small, you get paged at 3 AM. If a job succeeds because the cluster was too big, nobody notices the waste. The incentive structure rewards over-provisioning.</p>
+                <p>We fixed this by profiling every major job's actual resource utilization — CPU, memory, disk I/O, network — across two weeks of runs. The data was damning. The median cluster was using 35% of its provisioned memory and 45% of CPU. We right-sized aggressively, replacing on-demand instances with spot instances (with graceful handling for spot interruptions), and implemented autoscaling policies that matched cluster size to actual workload.</p>
+                <p>The key insight: compute-optimized instances for CPU-bound jobs (aggregations, joins), memory-optimized for jobs with large broadcast tables or caching requirements. The previous setup used one instance type for everything — the most expensive general-purpose option.</p>
+
+                <h3>Lever 4: Pipeline refactoring</h3>
+                <p>Several critical pipelines were monolithic: a single Spark application that read raw data, applied a dozen transformations, and wrote final output. When these jobs failed at step 10 of 12, the entire pipeline had to restart from scratch. At the data volumes we were processing, a single restart could waste tens of thousands of dollars in compute.</p>
+                <p>We split the worst offenders into discrete stages with checkpointed intermediate outputs. Each stage could be restarted independently. This didn't make the happy path faster, but it dramatically reduced waste from failures. When a downstream API timeout caused a job to fail at the enrichment stage, we restarted from the enrichment checkpoint instead of re-reading and re-processing petabytes of raw data.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The Spark-specific wins</h2>
+                <p>Beyond the four structural levers, several Spark-specific optimizations produced outsized returns. These are the techniques I reach for first on any Spark cost optimization engagement.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 380" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Before and after comparison of partition data distribution showing skewed vs balanced partitions">
+                        <defs>
+                            <style>{`
+                                .ps { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes psflow { to { stroke-dashoffset: -14; } }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="380" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="378" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="ps" font-size="14" font-weight="600" fill="#ffffff">Partition Strategy: Before vs. After</text>
+
+                        
+                        <text x="185" y="62" text-anchor="middle" class="ps" font-size="12" font-weight="600" fill="rgba(180,60,50,0.8)">Before: Skewed Partitions</text>
+                        <text x="185" y="78" text-anchor="middle" class="ps" font-size="9" fill="#525b6d">Partitioned by advertiser_id only</text>
+
+                        
+                        <rect x="50" y="92" width="30" height="200" rx="3" fill="rgba(180,60,50,0.5)" stroke="rgba(180,60,50,0.4)" stroke-width="1"/>
+                        <text x="65" y="86" text-anchor="middle" class="ps" font-size="8" fill="rgba(180,60,50,0.8)">A1</text>
+
+                        <rect x="88" y="152" width="30" height="140" rx="3" fill="rgba(180,60,50,0.4)" stroke="rgba(180,60,50,0.3)" stroke-width="1"/>
+                        <text x="103" y="146" text-anchor="middle" class="ps" font-size="8" fill="rgba(180,60,50,0.7)">A2</text>
+
+                        <rect x="126" y="242" width="30" height="50" rx="3" fill="rgba(180,60,50,0.2)" stroke="rgba(180,60,50,0.2)" stroke-width="1"/>
+                        <text x="141" y="236" text-anchor="middle" class="ps" font-size="8" fill="#525b6d">A3</text>
+
+                        <rect x="164" y="257" width="30" height="35" rx="3" fill="rgba(180,60,50,0.15)" stroke="rgba(180,60,50,0.15)" stroke-width="1"/>
+                        <text x="179" y="251" text-anchor="middle" class="ps" font-size="8" fill="#525b6d">A4</text>
+
+                        <rect x="202" y="262" width="30" height="30" rx="3" fill="rgba(180,60,50,0.12)" stroke="rgba(180,60,50,0.12)" stroke-width="1"/>
+                        <text x="217" y="256" text-anchor="middle" class="ps" font-size="8" fill="#525b6d">A5</text>
+
+                        <rect x="240" y="272" width="30" height="20" rx="3" fill="rgba(180,60,50,0.1)" stroke="rgba(180,60,50,0.1)" stroke-width="1"/>
+                        <text x="255" y="266" text-anchor="middle" class="ps" font-size="8" fill="#525b6d">A6</text>
+
+                        <rect x="278" y="277" width="30" height="15" rx="3" fill="rgba(180,60,50,0.08)" stroke="rgba(180,60,50,0.08)" stroke-width="1"/>
+                        <text x="293" y="271" text-anchor="middle" class="ps" font-size="8" fill="#525b6d">A7</text>
+
+                        
+                        <line x1="40" y1="292" x2="320" y2="292" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <line x1="65" y1="300" x2="65" y2="320" stroke="rgba(180,60,50,0.5)" stroke-width="1" stroke-dasharray="3 3"/>
+                        <text x="65" y="336" text-anchor="middle" class="ps" font-size="9" fill="rgba(180,60,50,0.8)">Straggler tasks</text>
+                        <text x="65" y="350" text-anchor="middle" class="ps" font-size="9" fill="rgba(180,60,50,0.8)">bottleneck entire job</text>
+
+                        
+                        <line x1="340" y1="200" x2="410" y2="200" stroke="#059669" stroke-width="2" stroke-dasharray="6 4" style="animation: psflow 1.5s linear infinite"/>
+                        <polygon points="406,195 416,200 406,205" fill="#059669"/>
+                        <text x="375" y="185" text-anchor="middle" class="ps" font-size="9" fill="#059669">Rebalance</text>
+
+                        
+                        <text x="575" y="62" text-anchor="middle" class="ps" font-size="12" font-weight="600" fill="#34d399">After: Balanced Partitions</text>
+                        <text x="575" y="78" text-anchor="middle" class="ps" font-size="9" fill="#525b6d">Composite key: advertiser_id + time_bucket</text>
+
+                        
+                        <rect x="435" y="210" width="30" height="82" rx="3" fill="rgba(52, 211, 153,0.3)" stroke="rgba(52, 211, 153,0.3)" stroke-width="1"/>
+                        <text x="450" y="204" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A1h1</text>
+
+                        <rect x="473" y="215" width="30" height="77" rx="3" fill="rgba(52, 211, 153,0.3)" stroke="rgba(52, 211, 153,0.3)" stroke-width="1"/>
+                        <text x="488" y="209" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A1h2</text>
+
+                        <rect x="511" y="207" width="30" height="85" rx="3" fill="rgba(52, 211, 153,0.3)" stroke="rgba(52, 211, 153,0.3)" stroke-width="1"/>
+                        <text x="526" y="201" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A2h1</text>
+
+                        <rect x="549" y="212" width="30" height="80" rx="3" fill="rgba(52, 211, 153,0.3)" stroke="rgba(52, 211, 153,0.3)" stroke-width="1"/>
+                        <text x="564" y="206" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A2h2</text>
+
+                        <rect x="587" y="218" width="30" height="74" rx="3" fill="rgba(52, 211, 153,0.25)" stroke="rgba(52, 211, 153,0.25)" stroke-width="1"/>
+                        <text x="602" y="212" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A3</text>
+
+                        <rect x="625" y="222" width="30" height="70" rx="3" fill="rgba(52, 211, 153,0.2)" stroke="rgba(52, 211, 153,0.2)" stroke-width="1"/>
+                        <text x="640" y="216" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A4</text>
+
+                        <rect x="663" y="220" width="30" height="72" rx="3" fill="rgba(52, 211, 153,0.2)" stroke="rgba(52, 211, 153,0.2)" stroke-width="1"/>
+                        <text x="678" y="214" text-anchor="middle" class="ps" font-size="8" fill="#34d399">A5+</text>
+
+                        
+                        <line x1="425" y1="292" x2="705" y2="292" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="575" y="320" text-anchor="middle" class="ps" font-size="9" fill="#34d399">Even distribution</text>
+                        <text x="575" y="336" text-anchor="middle" class="ps" font-size="9" fill="#34d399">No stragglers</text>
+
+                        
+                        <rect x="50" y="358" width="280" height="18" rx="3" fill="rgba(180,60,50,0.06)"/>
+                        <text x="190" y="371" text-anchor="middle" class="ps" font-size="9" fill="#525b6d">Shuffle: 2.4 TB &bull; Runtime: 50 min</text>
+
+                        <rect x="430" y="358" width="280" height="18" rx="3" fill="rgba(52, 211, 153,0.06)"/>
+                        <text x="570" y="371" text-anchor="middle" class="ps" font-size="9" fill="#34d399">Shuffle: 960 GB &bull; Runtime: 18 min</text>
+                    </svg>
+                </div>
+
+                <h3>Broadcast joins for dimension tables</h3>
+                <p>The enrichment pipeline joined the massive impression stream (billions of rows) with several dimension tables: campaign metadata (~500K rows), audience segments (~2M rows), and advertiser configuration (~50K rows). These joins were implemented as standard shuffle joins, meaning both sides of the join were redistributed across the cluster. For every join, the entire impression dataset was shuffled — hundreds of gigabytes of network I/O for a join against a table that could fit in memory on a single executor.</p>
+                <p>Switching to broadcast joins for these dimension tables eliminated the shuffle entirely. The small tables were broadcast to every executor, and the join happened locally. The enrichment pipeline's runtime dropped by 40%, and network I/O dropped by over 70%. The total compute savings from this single change was substantial — it ran every hour across the entire fleet.</p>
+
+                <h3>Partition pruning through write-time restructuring</h3>
+                <p>Several downstream jobs read from a large events table but only needed data for specific date ranges and event types. The table was partitioned by date but not by event type. This meant every job had to read the entire day's data and filter in memory — scanning terabytes to use gigabytes.</p>
+                <p>We restructured the write path to add event type as a partition dimension. Downstream jobs that only needed click events could now read only the click partition, skipping impression and conversion data entirely. The read volume for some jobs dropped by 80%. The write path became slightly more complex, but the aggregate read savings dwarfed the write overhead since the data was written once and read dozens of times.</p>
+
+                <h3>Adaptive query execution</h3>
+                <p>Spark's adaptive query execution (AQE) was available but disabled on the platform — the original team had encountered a bug in an early version and never re-enabled it after it was fixed. Enabling AQE with properly tuned thresholds gave us automatic partition coalescing (merging small partitions), skew join optimization (splitting oversized partitions at join time), and dynamic shuffle partition sizing. These were "free" improvements — no code changes, just configuration. They shaved 8-12% off runtimes across the board.</p>
+
+                <h3>Caching intermediate results</h3>
+                <p>The attribution pipeline computed an intermediate dataset — enriched events with attribution weights — that was consumed by three separate downstream computations: billing aggregation, reporting rollups, and anomaly detection. Each downstream job re-derived this intermediate from raw data independently. Three jobs doing the same expensive work.</p>
+                <p>We refactored this into a shared computation: the intermediate dataset was materialized once and consumed by all three downstream jobs. The compute savings were close to 3x for that portion of the pipeline, and it simplified debugging because there was one version of the truth instead of three independently computed versions.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>What doesn't work</h2>
+                <p>Not every optimization is worth doing. Some of the most tempting improvements actually make things worse when you account for the full cost — including complexity, maintenance burden, and the risk of breaking a working pipeline.</p>
+
+                <p><strong>Micro-optimizations that save 2% but add complexity.</strong> We had engineers eager to optimize UDF performance by rewriting Python logic in Scala. The improvement was real — about 3% on that specific stage — but it introduced a mixed-language codebase that most of the team couldn't debug. The maintenance cost exceeded the savings within three months. The rule I established: no optimization that requires specialized knowledge to maintain, unless the savings are significant enough to justify dedicated ownership.</p>
+
+                <p><strong>Over-engineering compression that slows reads.</strong> We experimented with maximum-level compression on intermediate datasets. Storage costs dropped, but decompression time increased so much that the net effect was more expensive — the compute cost of slower reads exceeded the storage savings. The sweet spot was moderate compression: substantial storage reduction with negligible decompression overhead.</p>
+
+                <p><strong>Premature caching.</strong> Caching sounds like a free win, but every cached dataset consumes executor memory. Cache the wrong things and you reduce the memory available for actual computation, causing spills to disk that slow everything down. We found that only datasets read more than twice within the same application benefited from caching. Everything else was cheaper to recompute.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Visualization of how 5% savings compounds across hourly runs, 30 clusters, and 365 days into massive annual savings">
+                        <defs>
+                            <style>{`
+                                .ce { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes ceflow { to { stroke-dashoffset: -14; } }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="360" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="358" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="ce" font-size="14" font-weight="600" fill="#ffffff">The Cost Compound Effect</text>
+                        <text x="380" y="50" text-anchor="middle" class="ce" font-size="10" fill="#525b6d">Small percentages become massive numbers at scale</text>
+
+                        
+                        <rect x="40" y="80" width="130" height="70" rx="9" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="105" y="105" text-anchor="middle" class="ce" font-size="11" font-weight="600" fill="#059669">5%</text>
+                        <text x="105" y="122" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">savings per job</text>
+                        <text x="105" y="138" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">run</text>
+
+                        
+                        <text x="195" y="120" text-anchor="middle" class="ce" font-size="18" font-weight="600" fill="#059669">&times;</text>
+
+                        
+                        <rect x="220" y="80" width="130" height="70" rx="9" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="285" y="105" text-anchor="middle" class="ce" font-size="11" font-weight="600" fill="#059669">24</text>
+                        <text x="285" y="122" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">runs per day</text>
+                        <text x="285" y="138" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">(hourly)</text>
+
+                        
+                        <text x="375" y="120" text-anchor="middle" class="ce" font-size="18" font-weight="600" fill="#059669">&times;</text>
+
+                        
+                        <rect x="400" y="80" width="130" height="70" rx="9" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="465" y="105" text-anchor="middle" class="ce" font-size="11" font-weight="600" fill="#059669">30</text>
+                        <text x="465" y="122" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">clusters</text>
+                        <text x="465" y="138" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">in fleet</text>
+
+                        
+                        <text x="555" y="120" text-anchor="middle" class="ce" font-size="18" font-weight="600" fill="#059669">&times;</text>
+
+                        
+                        <rect x="580" y="80" width="130" height="70" rx="9" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="645" y="105" text-anchor="middle" class="ce" font-size="11" font-weight="600" fill="#059669">365</text>
+                        <text x="645" y="122" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">days per</text>
+                        <text x="645" y="138" text-anchor="middle" class="ce" font-size="9" fill="#8b93a3">year</text>
+
+                        
+                        <line x1="105" y1="150" x2="380" y2="210" stroke="rgba(5, 150, 105,0.3)" stroke-width="1"/>
+                        <line x1="285" y1="150" x2="380" y2="210" stroke="rgba(5, 150, 105,0.4)" stroke-width="1"/>
+                        <line x1="465" y1="150" x2="380" y2="210" stroke="rgba(5, 150, 105,0.5)" stroke-width="1"/>
+                        <line x1="645" y1="150" x2="380" y2="210" stroke="rgba(5, 150, 105,0.6)" stroke-width="1"/>
+
+                        
+                        <rect x="260" y="210" width="240" height="80" rx="12" fill="rgba(5, 150, 105,0.12)" stroke="#059669" stroke-width="2"/>
+                        <text x="380" y="240" text-anchor="middle" class="ce" font-size="10" fill="#10b981">5% &times; 24 &times; 30 &times; 365 =</text>
+                        <text x="380" y="264" text-anchor="middle" class="ce" font-size="18" font-weight="600" fill="#059669">1,314,000</text>
+                        <text x="380" y="282" text-anchor="middle" class="ce" font-size="10" fill="#10b981">optimized job-runs per year</text>
+
+                        
+                        <circle cx="380" cy="252" fill="#059669">
+                            <animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.3;0.8;0.3" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+
+                        
+                        <text x="380" y="318" text-anchor="middle" class="ce" font-size="10" fill="#8b93a3">If each run costs $8, a 5% saving = $525,600/year</text>
+                        <text x="380" y="340" text-anchor="middle" class="ce" font-size="10" fill="#525b6d">At petabyte scale, "just 5%" is never "just 5%"</text>
+                    </svg>
+                </div>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The compound effect</h2>
+                <p>The most important thing to understand about cost optimization at petabyte scale is that small improvements multiply. A 5% improvement on a single job run is unremarkable. But when that job runs hourly, across 30 clusters, 365 days a year, that 5% compounds into over a million optimized runs — and hundreds of thousands of dollars in annual savings.</p>
+                <p>Let me show the actual math from the engagement. The attribution pipeline ran hourly on 8 clusters. Before optimization, each run cost approximately $12 in compute. After partition rebalancing (40% reduction), broadcast joins (15% reduction on top of that), and cluster right-sizing (another 20%), the per-run cost dropped to roughly $5. That single pipeline — one of about 40 major pipelines — saved $490,000 annually.</p>
+                <p>The enrichment pipeline was similar: hourly runs, 12 clusters, $18 per run before optimization. Broadcast joins and partition pruning brought it to $9. Annual savings: another $570,000. And so on across the fleet.</p>
+                <p>The total 40% reduction came from dozens of individual optimizations, each modest on its own, compounding across frequency and fleet size. No single trick saved 40%. The system did.</p>
+                <p>This is why I'm skeptical of "one weird trick" optimization stories. At scale, sustainable cost reduction comes from systematically applying the right lever at every pipeline, not from finding a silver bullet.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The optimization playbook: where to start</h2>
+                <p>When I'm handed a fleet of expensive Spark pipelines, I follow a specific diagnostic order. The order matters because it's ranked by impact — you want to fix the highest-leverage problems first, and each step's findings inform the next.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Optimization decision tree flowchart showing diagnostic order: partition skew, shuffle volume, cluster sizing, then pipeline structure">
+                        <defs>
+                            <style>{`
+                                .dt { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes dtflow { to { stroke-dashoffset: -14; } }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="520" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="518" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="32" text-anchor="middle" class="dt" font-size="14" font-weight="600" fill="#ffffff">Optimization Decision Tree</text>
+                        <text x="380" y="50" text-anchor="middle" class="dt" font-size="10" fill="#525b6d">Follow this order — start with the highest-impact lever</text>
+
+                        
+                        <rect x="290" y="68" width="180" height="42" rx="8" fill="#1f2937" stroke="#8b93a3" stroke-width="1.5"/>
+                        <text x="380" y="94" text-anchor="middle" class="dt" font-size="11" font-weight="600" fill="#ffffff">Pipeline too expensive?</text>
+
+                        
+                        <line x1="380" y1="110" x2="380" y2="135" stroke="#059669" stroke-width="1.5"/>
+                        <polygon points="375,131 380,141 385,131" fill="#059669"/>
+
+                        
+                        <rect x="260" y="138" width="240" height="52" rx="8" fill="rgba(5, 150, 105,0.12)" stroke="#059669" stroke-width="2"/>
+                        <text x="380" y="160" text-anchor="middle" class="dt" font-size="11" font-weight="600" fill="#059669">1. Check partition skew</text>
+                        <text x="380" y="178" text-anchor="middle" class="dt" font-size="9" fill="#10b981">Biggest lever — nearly half of all savings</text>
+
+                        
+                        <line x1="500" y1="164" x2="560" y2="164" stroke="#059669" stroke-width="1.2"/>
+                        <polygon points="556,160 566,164 556,168" fill="#059669"/>
+                        <rect x="570" y="146" width="160" height="36" rx="6" fill="rgba(5, 150, 105,0.08)" stroke="rgba(5, 150, 105,0.3)" stroke-width="1"/>
+                        <text x="650" y="169" text-anchor="middle" class="dt" font-size="9.5" fill="#10b981">Rebalance partition keys</text>
+                        <text x="538" y="157" class="dt" font-size="9" fill="#059669">Fix</text>
+
+                        
+                        <line x1="380" y1="190" x2="380" y2="218" stroke="#059669" stroke-width="1.5"/>
+                        <polygon points="375,214 380,224 385,214" fill="#059669"/>
+
+                        
+                        <rect x="260" y="222" width="240" height="52" rx="8" fill="rgba(52, 211, 153,0.08)" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="380" y="244" text-anchor="middle" class="dt" font-size="11" font-weight="600" fill="#34d399">2. Check shuffle volume</text>
+                        <text x="380" y="262" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">Broadcast joins, partition pruning</text>
+
+                        
+                        <line x1="500" y1="248" x2="560" y2="248" stroke="#34d399" stroke-width="1.2"/>
+                        <polygon points="556,244 566,248 556,252" fill="#34d399"/>
+                        <rect x="570" y="230" width="160" height="36" rx="6" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.2)" stroke-width="1"/>
+                        <text x="650" y="253" text-anchor="middle" class="dt" font-size="9.5" fill="#34d399">Broadcast + prune</text>
+                        <text x="538" y="241" class="dt" font-size="9" fill="#34d399">Fix</text>
+
+                        
+                        <line x1="380" y1="274" x2="380" y2="302" stroke="#059669" stroke-width="1.5"/>
+                        <polygon points="375,298 380,308 385,298" fill="#059669"/>
+
+                        
+                        <rect x="260" y="306" width="240" height="52" rx="8" fill="rgba(42,58,82,0.5)" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="380" y="328" text-anchor="middle" class="dt" font-size="11" font-weight="600" fill="#e8ecf1">3. Check cluster sizing</text>
+                        <text x="380" y="346" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">CPU/memory utilization, instance types</text>
+
+                        
+                        <line x1="500" y1="332" x2="560" y2="332" stroke="#525b6d" stroke-width="1.2"/>
+                        <polygon points="556,328 566,332 556,336" fill="#525b6d"/>
+                        <rect x="570" y="314" width="160" height="36" rx="6" fill="rgba(42,58,82,0.4)" stroke="#525b6d" stroke-width="1"/>
+                        <text x="650" y="337" text-anchor="middle" class="dt" font-size="9.5" fill="#8b93a3">Right-size + spot</text>
+                        <text x="538" y="325" class="dt" font-size="9" fill="#525b6d">Fix</text>
+
+                        
+                        <line x1="380" y1="358" x2="380" y2="386" stroke="#059669" stroke-width="1.5"/>
+                        <polygon points="375,382 380,392 385,382" fill="#059669"/>
+
+                        
+                        <rect x="260" y="390" width="240" height="52" rx="8" fill="rgba(42,58,82,0.3)" stroke="#1f2937" stroke-width="1.5"/>
+                        <text x="380" y="412" text-anchor="middle" class="dt" font-size="11" font-weight="600" fill="#8b93a3">4. Consider refactoring</text>
+                        <text x="380" y="430" text-anchor="middle" class="dt" font-size="9" fill="#525b6d">Split monoliths, checkpoint stages</text>
+
+                        
+                        <line x1="500" y1="416" x2="560" y2="416" stroke="#1f2937" stroke-width="1.2"/>
+                        <polygon points="556,412 566,416 556,420" fill="#1f2937"/>
+                        <rect x="570" y="398" width="160" height="36" rx="6" fill="rgba(42,58,82,0.2)" stroke="#1f2937" stroke-width="1"/>
+                        <text x="650" y="421" text-anchor="middle" class="dt" font-size="9.5" fill="#525b6d">Stage + checkpoint</text>
+                        <text x="538" y="409" class="dt" font-size="9" fill="#525b6d">Fix</text>
+
+                        
+                        <rect x="30" y="170" width="200" height="120" rx="8" fill="rgba(5, 150, 105,0.04)" stroke="rgba(5, 150, 105,0.15)" stroke-width="1"/>
+                        <text x="130" y="196" text-anchor="middle" class="dt" font-size="10" font-weight="600" fill="#059669">Why this order?</text>
+                        <text x="130" y="218" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">Partition fixes reduce</text>
+                        <text x="130" y="232" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">shuffle volume, which</text>
+                        <text x="130" y="246" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">changes cluster needs,</text>
+                        <text x="130" y="260" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">which changes refactoring</text>
+                        <text x="130" y="274" text-anchor="middle" class="dt" font-size="9" fill="#8b93a3">priorities.</text>
+
+                        
+                        <line x1="230" y1="220" x2="260" y2="190" stroke="rgba(5, 150, 105,0.2)" stroke-width="1" stroke-dasharray="3 3"/>
+
+                        
+                        <text x="380" y="475" text-anchor="middle" class="dt" font-size="10" fill="#525b6d">Each step's findings change the optimal approach for the next step.</text>
+                        <text x="380" y="495" text-anchor="middle" class="dt" font-size="10" fill="#525b6d">Fix partitions first — everything downstream shifts.</text>
+                    </svg>
+                </div>
+
+                <p>This order isn't arbitrary. Partition fixes reduce shuffle volume, which changes your cluster's resource profile, which changes whether refactoring is worthwhile. If you right-size the cluster before fixing partition skew, you'll have to right-size again after. If you refactor the pipeline into stages before fixing the joins, you might split in the wrong places. Start at the top of the funnel.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Documenting the economics</h2>
+                <p>Here's the thing nobody tells you about cost optimization at scale: the savings are fragile. Every optimization decision exists for a reason — a specific data distribution, a particular access pattern, a measured resource profile. When those conditions change (and they will), the optimization may become counterproductive.</p>
+                <p>The partition strategy that saved 55% on the attribution pipeline was calibrated for a specific advertiser size distribution. If the platform onboards three massive new advertisers, the composite key boundaries need to shift. The broadcast join thresholds were set based on dimension table sizes — if those tables grow 10x, the broadcasts will cause out-of-memory failures.</p>
+                <p>I documented every optimization decision with three things: <em>what</em> we changed, <em>why</em> the original approach was expensive (with data), and <em>when</em> the optimization should be revisited. For the partition rebalancing: "Revisit when any single advertiser exceeds 8% of total daily volume." For the broadcast joins: "Revisit if any dimension table exceeds 2 GB." For the cluster sizing: "Re-profile quarterly or after any major workload change."</p>
+                <p>This documentation wasn't optional polish — it was a critical part of the optimization itself. Without it, the next engineer who encounters a performance problem won't understand why the partition key looks odd, won't know the thresholds, and will likely "fix" the optimization back to something that costs 40% more.</p>
+                <p>I've since formalized this into a structured knowledge base approach — where every infrastructure decision, its rationale, and its review triggers are captured in a cross-referenced, maintained system. You can read about that approach in <a href="/posts/knowledge-base-as-agentic-memory"><strong>The Knowledge Base Strategy</strong></a>. The principle is the same: institutional knowledge that isn't captured is institutional knowledge that's already being lost.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The bottom line</h2>
+                <p>Cost optimization at petabyte scale is an engineering discipline, not a bag of tricks. The tools are straightforward — partition rebalancing, broadcast joins, cluster right-sizing, pipeline decomposition. The hard part is approaching it systematically: measuring before optimizing, understanding the economics of each decision, following the diagnostic order that maximizes impact, and documenting everything so the savings persist.</p>
+                <p>Here's what I'd tell any team staring at a cloud bill that's growing faster than revenue:</p>
+                <ul>
+                    <li><strong>Start with the cost model.</strong> You can't optimize what you can't measure. Attach dollar figures to every major pipeline before you touch any code.</li>
+                    <li><strong>Fix partitions first.</strong> In every engagement I've done, partition skew is the single biggest source of waste. It's also the most satisfying to fix — the before/after numbers are dramatic.</li>
+                    <li><strong>Think in SLAs, not speed.</strong> The cheapest pipeline that meets the business constraint is the right pipeline. Faster than necessary is waste.</li>
+                    <li><strong>Small improvements compound.</strong> Don't chase silver bullets. A systematic 5% improvement across 40 pipelines running hourly produces more savings than a heroic 50% improvement on one job.</li>
+                    <li><strong>Document the economics.</strong> Every optimization has a shelf life. Capture the assumptions so future engineers know when to revisit.</li>
+                </ul>
+                <p>Leadership asked for 30%. We delivered 40%. Not because we found a clever trick, but because we treated every pipeline as an economic system and optimized the system, not the parts.</p>
+            </section>

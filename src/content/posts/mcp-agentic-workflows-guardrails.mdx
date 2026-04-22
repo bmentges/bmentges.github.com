@@ -1,0 +1,602 @@
+---
+title: "MCP, Agentic Workflows, and Guardrails: A Production Field Guide"
+description: "What Model Context Protocol actually looks like in a real engineering workflow — how to set up context servers, build guardrails that earn trust, and integrate agents where they matter."
+category: "AI Engineering"
+date: 2026-04-15
+tags:
+  - "mcp"
+  - "ai-agents"
+  - "guardrails"
+  - "production"
+published: true
+---
+
+
+
+
+            
+            <section class="content-section">
+                <p>Most engineering teams using AI today are stuck in the same place: they have a coding assistant, it autocompletes reasonably well, and nobody would call it transformative. The gap between "we have copilot" and "AI is part of our engineering process" is enormous — and it's not a model gap. It's a context gap.</p>
+                <p>Agents without context about <em>your</em> system give generic advice. They suggest patterns that contradict your architecture decisions. They scaffold pipelines that ignore your naming conventions. They generate code that doesn't account for the constraints your team learned the hard way over two years of production incidents.</p>
+                <p>I've spent the past two years integrating AI agents into data engineering workflows at a major B2B data platform — pipelines processing terabytes daily, dozens of engineers, hundreds of models. The agents that actually shipped and earned team trust weren't the smartest ones. They were the ones with the best context infrastructure underneath them.</p>
+                <p>That infrastructure has three layers: <strong>MCP</strong> for live infrastructure access, <strong>guardrails</strong> for trust boundaries, and a <strong>knowledge base</strong> for institutional memory. This article is a field guide to building all three.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>MCP: what it actually is</h2>
+                <p>Model Context Protocol is one of those things that sounds abstract until you use it, and then you wonder how you ever worked without it. Let me cut through the marketing.</p>
+                <p>MCP is not a framework. It's not a library. It's a <strong>protocol</strong> — a standardized way for LLM agents to access external data sources. Think of it as an API specifically designed for agent context. The agent is the client. Your infrastructure is the server. MCP defines how they talk to each other.</p>
+                <p>Before MCP, giving an agent context about your system meant one of two things: dump thousands of lines of code into a prompt (expensive, noisy, hits token limits) or accept that the agent would give generic advice based on its training data. Neither option works for production engineering.</p>
+                <p>MCP changes this by letting you build <strong>context servers</strong> — lightweight services that expose specific slices of your infrastructure in a structured format that agents can query on demand. The agent asks "what does the schema of this table look like?" and the MCP server returns the answer. The agent asks "what are the upstream dependencies of this pipeline?" and gets a precise graph. No prompt stuffing. No guessing.</p>
+                <p>The client-server model is the key insight. The agent doesn't need to know <em>how</em> your infrastructure works. It just needs to know how to ask questions through the protocol. This means you can swap out infrastructure without changing the agent, and you can upgrade agents without changing your servers.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 740 310" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <style>{`
+                                .dm1 { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes dm1flow { to { stroke-dashoffset: -16; } }
+                            `}</style>
+                        </defs>
+                        <rect width="740" height="310" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="738" height="308" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="370" y="30" text-anchor="middle" class="dm1" font-size="12" font-weight="600" fill="#ffffff">MCP Client-Server Model</text>
+
+                        
+                        <rect x="30" y="90" width="170" height="120" rx="10" fill="rgba(52, 211, 153,0.06)" stroke="#34d399" stroke-width="1.8"/>
+                        <text x="115" y="82" text-anchor="middle" class="dm1" font-size="10" fill="#525b6d">CLIENT</text>
+                        <text x="115" y="140" text-anchor="middle" class="dm1" font-size="13" font-weight="600" fill="#ffffff">LLM Agent</text>
+                        <text x="115" y="162" text-anchor="middle" class="dm1" font-size="10" fill="#34d399">Claude Code</text>
+                        <text x="115" y="178" text-anchor="middle" class="dm1" font-size="10" fill="#34d399">Cursor / Codex</text>
+                        <text x="115" y="194" text-anchor="middle" class="dm1" font-size="10" fill="#525b6d">any MCP client</text>
+
+                        
+                        <rect x="255" y="110" width="210" height="80" rx="10" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="360" y="145" text-anchor="middle" class="dm1" font-size="12" font-weight="600" fill="#10b981">MCP Protocol</text>
+                        <text x="360" y="165" text-anchor="middle" class="dm1" font-size="10" fill="#8b93a3">structured queries</text>
+                        <text x="360" y="180" text-anchor="middle" class="dm1" font-size="10" fill="#8b93a3">+ context responses</text>
+
+                        
+                        <line x1="200" y1="140" x2="255" y2="140" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5 4" style="animation: dm1flow 1.4s linear infinite"/>
+                        <polygon points="251,136 259,140 251,144" fill="#34d399"/>
+                        <line x1="255" y1="160" x2="200" y2="160" stroke="#059669" stroke-width="1.5" stroke-dasharray="5 4" style="animation: dm1flow 1.4s linear infinite"/>
+                        <polygon points="204,156 196,160 204,164" fill="#059669"/>
+
+                        
+                        <text x="610" y="62" text-anchor="middle" class="dm1" font-size="10" fill="#525b6d">SERVERS</text>
+
+                        <rect x="520" y="72" width="190" height="36" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="615" y="95" text-anchor="middle" class="dm1" font-size="10.5" fill="#e8ecf1">Pipeline Server</text>
+
+                        <rect x="520" y="118" width="190" height="36" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="615" y="141" text-anchor="middle" class="dm1" font-size="10.5" fill="#e8ecf1">Schema Server</text>
+
+                        <rect x="520" y="164" width="190" height="36" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="615" y="187" text-anchor="middle" class="dm1" font-size="10.5" fill="#e8ecf1">Code Server</text>
+
+                        <rect x="520" y="210" width="190" height="36" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="615" y="233" text-anchor="middle" class="dm1" font-size="10.5" fill="#e8ecf1">Docs Server</text>
+
+                        
+                        <line x1="465" y1="130" x2="520" y2="90" stroke="#525b6d" stroke-width="1.2" stroke-dasharray="5 4" style="animation: dm1flow 1.5s linear infinite"/>
+                        <line x1="465" y1="140" x2="520" y2="136" stroke="#525b6d" stroke-width="1.2" stroke-dasharray="5 4" style="animation: dm1flow 1.6s linear infinite"/>
+                        <line x1="465" y1="155" x2="520" y2="182" stroke="#525b6d" stroke-width="1.2" stroke-dasharray="5 4" style="animation: dm1flow 1.7s linear infinite"/>
+                        <line x1="465" y1="165" x2="520" y2="228" stroke="#525b6d" stroke-width="1.2" stroke-dasharray="5 4" style="animation: dm1flow 1.8s linear infinite"/>
+
+                        
+                        <text x="370" y="288" text-anchor="middle" class="dm1" font-size="10" fill="#525b6d">The agent queries through MCP. Context servers answer. Your infrastructure stays behind the protocol boundary.</text>
+                    </svg>
+                </div>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Setting up context servers in practice</h2>
+                <p>For a data engineering team, I've found four context servers cover roughly 90% of what agents need. Here's what each one looks like and what makes the difference between a useful server and a noisy one.</p>
+
+                <h3>1. Pipeline/orchestrator metadata server</h3>
+                <p>This server exposes your workflow orchestrator's metadata: DAG definitions, schedule configurations, dependency graphs, recent run histories, task durations, and failure rates. When an agent needs to understand how a pipeline is structured or why a run failed, this is where it looks.</p>
+                <p><strong>What makes it good</strong>: Expose the <em>operational</em> view, not just the config. An agent doesn't just need to know that Pipeline X runs at 06:00 UTC — it needs to know that Pipeline X's average runtime is 23 minutes, it failed 3 times last month, and its downstream consumers start at 07:00. The difference between config and operations is the difference between a map and ground truth.</p>
+
+                <h3>2. Schema/warehouse metadata server</h3>
+                <p>This server exposes your data warehouse structure: table schemas, column types, partition strategies, freshness metadata, row counts, and lineage. When an agent scaffolds a new model or reviews a query, this is its reference.</p>
+                <p><strong>What makes it good</strong>: Include freshness and lineage, not just structure. Knowing that a table has 50 columns is useful. Knowing that it was last refreshed 3 hours ago, updates daily at 05:00, and feeds into 12 downstream tables is what changes an agent's output from "technically valid SQL" to "production-aware SQL."</p>
+
+                <h3>3. Code repository context server</h3>
+                <p>This server exposes your codebase structure: directory layout, file types, recent changes (last N commits per path), active branches, and code conventions. Not the full code — that's what the agent reads directly. This server provides the <em>metadata about</em> the code.</p>
+                <p><strong>What makes it good</strong>: Surface change velocity and ownership. A file that hasn't been touched in 18 months needs different handling than one with 40 commits this quarter. Knowing who last modified a module helps agents understand context even when the code comments are sparse.</p>
+
+                <h3>4. Documentation/conventions server</h3>
+                <p>This server exposes your team's standards: naming conventions, testing requirements, PR checklists, style guides, and onboarding documentation. This is the "how we do things here" layer.</p>
+                <p><strong>What makes it good</strong>: Be prescriptive, not descriptive. "We use snake_case for table names" is more useful to an agent than "table names vary across the codebase." If the conventions are aspirational rather than actual, say so — agents that enforce conventions the team doesn't actually follow lose trust fast.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 740 420" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <style>{`
+                                .dm2 { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes dm2flow { to { stroke-dashoffset: -14; } }
+                            `}</style>
+                        </defs>
+                        <rect width="740" height="420" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="738" height="418" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="370" y="30" text-anchor="middle" class="dm2" font-size="12" font-weight="600" fill="#ffffff">Four Context Servers for Data Engineering</text>
+
+                        
+                        <rect x="30" y="52" width="330" height="130" rx="9" fill="rgba(52, 211, 153,0.04)" stroke="rgba(52, 211, 153,0.25)" stroke-width="1.2"/>
+                        <text x="195" y="76" text-anchor="middle" class="dm2" font-size="12" font-weight="600" fill="#34d399">Pipeline Server</text>
+                        <rect x="50" y="90" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="120" y="108" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">DAG definitions</text>
+                        <rect x="200" y="90" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="270" y="108" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Schedules</text>
+                        <rect x="50" y="124" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="120" y="142" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Run history</text>
+                        <rect x="200" y="124" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="270" y="142" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Failure rates</text>
+                        <text x="195" y="170" text-anchor="middle" class="dm2" font-size="9" fill="#525b6d">Operational view of workflow orchestration</text>
+
+                        
+                        <rect x="380" y="52" width="330" height="130" rx="9" fill="rgba(52, 211, 153,0.04)" stroke="rgba(52, 211, 153,0.25)" stroke-width="1.2"/>
+                        <text x="545" y="76" text-anchor="middle" class="dm2" font-size="12" font-weight="600" fill="#34d399">Schema Server</text>
+                        <rect x="400" y="90" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="470" y="108" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Tables &amp; columns</text>
+                        <rect x="550" y="90" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="620" y="108" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Lineage</text>
+                        <rect x="400" y="124" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="470" y="142" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Freshness</text>
+                        <rect x="550" y="124" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="620" y="142" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Partitions</text>
+                        <text x="545" y="170" text-anchor="middle" class="dm2" font-size="9" fill="#525b6d">Warehouse structure, types, and data health</text>
+
+                        
+                        <rect x="30" y="198" width="330" height="130" rx="9" fill="rgba(52, 211, 153,0.04)" stroke="rgba(52, 211, 153,0.25)" stroke-width="1.2"/>
+                        <text x="195" y="222" text-anchor="middle" class="dm2" font-size="12" font-weight="600" fill="#34d399">Code Server</text>
+                        <rect x="50" y="236" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="120" y="254" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Repo structure</text>
+                        <rect x="200" y="236" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="270" y="254" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Recent changes</text>
+                        <rect x="50" y="270" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="120" y="288" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Active branches</text>
+                        <rect x="200" y="270" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="270" y="288" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Conventions</text>
+                        <text x="195" y="316" text-anchor="middle" class="dm2" font-size="9" fill="#525b6d">Codebase metadata and change velocity</text>
+
+                        
+                        <rect x="380" y="198" width="330" height="130" rx="9" fill="rgba(52, 211, 153,0.04)" stroke="rgba(52, 211, 153,0.25)" stroke-width="1.2"/>
+                        <text x="545" y="222" text-anchor="middle" class="dm2" font-size="12" font-weight="600" fill="#34d399">Docs Server</text>
+                        <rect x="400" y="236" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="470" y="254" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">ADRs</text>
+                        <rect x="550" y="236" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="620" y="254" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Onboarding</text>
+                        <rect x="400" y="270" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="470" y="288" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Runbooks</text>
+                        <rect x="550" y="270" width="140" height="26" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="620" y="288" text-anchor="middle" class="dm2" font-size="9.5" fill="#34d399">Style guides</text>
+                        <text x="545" y="316" text-anchor="middle" class="dm2" font-size="9" fill="#525b6d">Team standards and institutional documentation</text>
+
+                        
+                        <rect x="270" y="350" width="200" height="40" rx="9" fill="#059669" stroke="#10b981" stroke-width="1.5"/>
+                        <text x="370" y="375" text-anchor="middle" class="dm2" font-size="12" font-weight="600" fill="#ffffff">Agent Context</text>
+
+                        
+                        <line x1="195" y1="182" x2="310" y2="355" stroke="#059669" stroke-width="1.2" stroke-dasharray="4 3" style="animation: dm2flow 1.5s linear infinite"/>
+                        <line x1="545" y1="182" x2="430" y2="355" stroke="#059669" stroke-width="1.2" stroke-dasharray="4 3" style="animation: dm2flow 1.6s linear infinite"/>
+                        <line x1="195" y1="328" x2="310" y2="365" stroke="#059669" stroke-width="1.2" stroke-dasharray="4 3" style="animation: dm2flow 1.7s linear infinite"/>
+                        <line x1="545" y1="328" x2="430" y2="365" stroke="#059669" stroke-width="1.2" stroke-dasharray="4 3" style="animation: dm2flow 1.8s linear infinite"/>
+
+                        
+                        <text x="370" y="408" text-anchor="middle" class="dm2" font-size="10" fill="#525b6d">Four servers, one unified context. Each exposes a different slice of your infrastructure.</text>
+                    </svg>
+                </div>
+
+                <p>A common mistake: building context servers that return too much data. An agent doesn't need a full table dump — it needs the schema, the freshness timestamp, and the top consumers. <strong>Think about what a senior engineer would look up</strong> when answering a question, and expose that. If a server response requires scrolling, it's too verbose.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The guardrails framework</h2>
+                <p>Here's a pattern I've seen kill AI adoption at three different teams: someone builds a capable agent, it does something unexpected in production, and the entire initiative gets shut down. Not because the agent was bad — because there were no boundaries. One misstep costs months of trust.</p>
+                <p>Guardrails come <strong>before</strong> capabilities. Before you give an agent the ability to do anything useful, you define what it absolutely cannot do. This sounds backward — why limit the thing you're trying to make powerful? Because trust is the bottleneck, not capability. A limited agent that the team trusts will be adopted. A capable agent that the team fears will be shelved.</p>
+                <p>I use a three-zone framework:</p>
+
+                <h3>Zone 1: CAN DO (autonomous)</h3>
+                <p>Actions the agent can take without any human approval. These are read-only or low-blast-radius operations:</p>
+                <ul>
+                    <li><strong>Read data</strong> — query schemas, inspect pipeline metadata, browse run histories</li>
+                    <li><strong>Generate code</strong> — produce code snippets, scaffold new files, write tests</li>
+                    <li><strong>Suggest changes</strong> — propose PR descriptions, recommend fixes, draft documentation</li>
+                    <li><strong>Review PRs</strong> — comment on pull requests, flag issues, check conventions</li>
+                </ul>
+
+                <h3>Zone 2: WITH REVIEW (supervised)</h3>
+                <p>Actions the agent can prepare but a human must approve before execution:</p>
+                <ul>
+                    <li><strong>Deploy suggestions</strong> — the agent can draft a deployment plan, but a human runs it</li>
+                    <li><strong>Modify configurations</strong> — the agent can propose config changes, but they go through normal review</li>
+                    <li><strong>Create tickets/issues</strong> — the agent can draft incident reports or feature requests for human review</li>
+                </ul>
+
+                <h3>Zone 3: CANNOT (hard boundary)</h3>
+                <p>Actions that are off-limits regardless of context. These are non-negotiable:</p>
+                <ul>
+                    <li><strong>Modify production data</strong> — no writes to production tables, no deleting records, no schema migrations</li>
+                    <li><strong>Merge code</strong> — agents can suggest, review, and approve, but the merge button is human-only</li>
+                    <li><strong>Skip tests</strong> — no bypassing CI/CD gates, no overriding quality checks, no "just this once" exceptions</li>
+                </ul>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 740 330" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <style>{`.dm3 { font-family: 'JetBrains Mono', monospace; }`}</style>
+                        </defs>
+                        <rect width="740" height="330" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="738" height="328" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="370" y="30" text-anchor="middle" class="dm3" font-size="12" font-weight="600" fill="#ffffff">Guardrails Framework: Three Trust Zones</text>
+
+                        
+                        <rect x="25" y="50" width="220" height="240" rx="10" fill="rgba(52, 211, 153,0.05)" stroke="#34d399" stroke-width="1.5"/>
+                        <text x="135" y="76" text-anchor="middle" class="dm3" font-size="12" font-weight="600" fill="#34d399">CAN DO</text>
+                        <text x="135" y="94" text-anchor="middle" class="dm3" font-size="9" fill="#525b6d">Autonomous</text>
+
+                        <rect x="40" y="112" width="190" height="30" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.15)" stroke-width="1"/>
+                        <text x="135" y="132" text-anchor="middle" class="dm3" font-size="10" fill="#34d399">Read data &amp; metadata</text>
+                        <rect x="40" y="150" width="190" height="30" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.15)" stroke-width="1"/>
+                        <text x="135" y="170" text-anchor="middle" class="dm3" font-size="10" fill="#34d399">Generate code</text>
+                        <rect x="40" y="188" width="190" height="30" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.15)" stroke-width="1"/>
+                        <text x="135" y="208" text-anchor="middle" class="dm3" font-size="10" fill="#34d399">Suggest changes</text>
+                        <rect x="40" y="226" width="190" height="30" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.15)" stroke-width="1"/>
+                        <text x="135" y="246" text-anchor="middle" class="dm3" font-size="10" fill="#34d399">Review PRs</text>
+
+                        <text x="135" y="278" text-anchor="middle" class="dm3" font-size="9.5" fill="#34d399">Zero blast radius</text>
+
+                        
+                        <rect x="260" y="50" width="220" height="240" rx="10" fill="rgba(5, 150, 105,0.05)" stroke="#059669" stroke-width="1.5"/>
+                        <text x="370" y="76" text-anchor="middle" class="dm3" font-size="12" font-weight="600" fill="#059669">WITH REVIEW</text>
+                        <text x="370" y="94" text-anchor="middle" class="dm3" font-size="9" fill="#525b6d">Supervised</text>
+
+                        <rect x="275" y="112" width="190" height="30" rx="5" fill="rgba(5, 150, 105,0.06)" stroke="rgba(5, 150, 105,0.15)" stroke-width="1"/>
+                        <text x="370" y="132" text-anchor="middle" class="dm3" font-size="10" fill="#10b981">Deploy suggestions</text>
+                        <rect x="275" y="150" width="190" height="30" rx="5" fill="rgba(5, 150, 105,0.06)" stroke="rgba(5, 150, 105,0.15)" stroke-width="1"/>
+                        <text x="370" y="170" text-anchor="middle" class="dm3" font-size="10" fill="#10b981">Modify configs</text>
+                        <rect x="275" y="188" width="190" height="30" rx="5" fill="rgba(5, 150, 105,0.06)" stroke="rgba(5, 150, 105,0.15)" stroke-width="1"/>
+                        <text x="370" y="208" text-anchor="middle" class="dm3" font-size="10" fill="#10b981">Create tickets</text>
+
+                        <text x="370" y="278" text-anchor="middle" class="dm3" font-size="9.5" fill="#10b981">Human approves</text>
+
+                        
+                        <rect x="495" y="50" width="220" height="240" rx="10" fill="rgba(100,116,139,0.08)" stroke="#525b6d" stroke-width="1.5"/>
+                        <text x="605" y="76" text-anchor="middle" class="dm3" font-size="12" font-weight="600" fill="#8b93a3">CANNOT</text>
+                        <text x="605" y="94" text-anchor="middle" class="dm3" font-size="9" fill="#525b6d">Hard boundary</text>
+
+                        <rect x="510" y="112" width="190" height="30" rx="5" fill="rgba(100,116,139,0.08)" stroke="rgba(100,116,139,0.2)" stroke-width="1"/>
+                        <text x="605" y="132" text-anchor="middle" class="dm3" font-size="10" fill="#525b6d">Modify prod data</text>
+                        <rect x="510" y="150" width="190" height="30" rx="5" fill="rgba(100,116,139,0.08)" stroke="rgba(100,116,139,0.2)" stroke-width="1"/>
+                        <text x="605" y="170" text-anchor="middle" class="dm3" font-size="10" fill="#525b6d">Merge code</text>
+                        <rect x="510" y="188" width="190" height="30" rx="5" fill="rgba(100,116,139,0.08)" stroke="rgba(100,116,139,0.2)" stroke-width="1"/>
+                        <text x="605" y="208" text-anchor="middle" class="dm3" font-size="10" fill="#525b6d">Skip tests / CI gates</text>
+
+                        <text x="605" y="278" text-anchor="middle" class="dm3" font-size="9.5" fill="#525b6d">Non-negotiable</text>
+
+                        
+                        <line x1="60" y1="305" x2="680" y2="305" stroke="#1f2937" stroke-width="1"/>
+                        <polygon points="676,301 684,305 676,309" fill="#1f2937"/>
+                        <text x="370" y="320" text-anchor="middle" class="dm3" font-size="10" fill="#525b6d">Define boundaries first, expand capabilities later. Trust is the adoption bottleneck.</text>
+                    </svg>
+                </div>
+
+                <p>The key insight: guardrails aren't restrictions on what AI can do. They're the <em>foundation</em> for what AI is allowed to do. Every time the agent operates cleanly within its boundaries, trust compounds. And trust is what lets you gradually expand the "CAN DO" zone over time.</p>
+                <p>As I described in <a href="/posts/ai-agents-in-data-pipelines">my experience integrating AI agents into data pipelines</a>, the teams that defined guardrails first moved faster in the long run than teams that gave agents broad permissions and then pulled back after incidents.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Workflow integration patterns</h2>
+                <p>Context servers give agents eyes. Guardrails give them boundaries. The next question is: where do agents actually plug into the engineering lifecycle? Not "where could they theoretically help" — where do they produce measurable value with acceptable risk?</p>
+                <p>After building five agents and watching which ones earned adoption and which ones got ignored, I've identified five integration points that consistently work:</p>
+
+                <h3>1. Pipeline scaffolding</h3>
+                <p><strong>Trigger</strong>: Engineer starts a new pipeline or model. <strong>Context needed</strong>: Schema server (upstream tables), code server (naming conventions, directory structure), docs server (standards). <strong>Output</strong>: Pre-populated pipeline with correct naming, partitioning, tests, and documentation stubs. <strong>Guardrails</strong>: CAN DO — generates files only, no execution.</p>
+                <p>This cut new pipeline setup from 45-60 minutes to 15 minutes. The real win isn't speed — it's consistency. Every scaffolded pipeline follows the team's conventions because the agent reads them from the context server, not from memory.</p>
+
+                <h3>2. Pre-review checks</h3>
+                <p><strong>Trigger</strong>: PR opened or updated. <strong>Context needed</strong>: Schema server (affected tables), pipeline server (downstream dependencies), docs server (conventions). <strong>Output</strong>: Comments on the PR flagging mechanical issues — missing null checks, partition skew risks, schema drift, convention violations. <strong>Guardrails</strong>: CAN DO — comments only, cannot approve or merge.</p>
+                <p>This freed senior engineers to focus on architectural review instead of catching mechanical issues. The agent handles the "did you remember to..." checklist so humans can focus on "should we..."</p>
+
+                <h3>3. Incident context assembly</h3>
+                <p><strong>Trigger</strong>: Alert fires or on-call engineer escalates. <strong>Context needed</strong>: Pipeline server (run history, upstream status, failure patterns), schema server (recent changes to affected tables). <strong>Output</strong>: A context briefing — what failed, what changed recently upstream, similar past failures, affected downstream consumers. <strong>Guardrails</strong>: CAN DO — read-only assembly, no remediation actions.</p>
+                <p>This was the most impactful agent. At 3 AM, nobody wants to spend 20 minutes manually checking upstream statuses and cross-referencing recent deploys. The agent assembles the same context in seconds.</p>
+
+                <h3>4. Documentation sync</h3>
+                <p><strong>Trigger</strong>: Code merged to main branch. <strong>Context needed</strong>: Code server (diff analysis), schema server (affected models), docs server (existing documentation). <strong>Output</strong>: Updated documentation reflecting code changes — model descriptions, column definitions, dependency notes. <strong>Guardrails</strong>: WITH REVIEW — docs are generated as a PR for human approval before merge.</p>
+                <p>Documentation that stays in sync with code is one of those things every team wants and nobody maintains. The agent handles the "what" (this model now has a new column, this pipeline added a dependency) and humans review to add the "why."</p>
+
+                <h3>5. Architecture planning</h3>
+                <p><strong>Trigger</strong>: Engineer or tech lead starts planning a new feature or migration. <strong>Context needed</strong>: All four servers plus the knowledge base (architecture decisions, past failures, in-flight projects). <strong>Output</strong>: A structured plan draft with dependency analysis, risk flags, and references to relevant prior decisions. <strong>Guardrails</strong>: WITH REVIEW — the plan is a starting point for human refinement, never executed directly.</p>
+                <p>This is where the knowledge base matters most. An agent with only MCP can tell you which tables are involved. An agent with MCP plus the knowledge base can tell you that this migration pattern failed last year and what the team learned from it.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 740 300" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <style>{`
+                                .dm4 { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes dm4flow { to { stroke-dashoffset: -14; } }
+                            `}</style>
+                        </defs>
+                        <rect width="740" height="300" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="738" height="298" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="370" y="28" text-anchor="middle" class="dm4" font-size="12" font-weight="600" fill="#ffffff">Agent Integration Points in the Engineering Lifecycle</text>
+
+                        
+                        <rect x="15" y="52" width="90" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="60" y="78" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Plan</text>
+                        <line x1="105" y1="73" x2="125" y2="73" stroke="#525b6d" stroke-width="1.2"/><polygon points="123,70 130,73 123,76" fill="#525b6d"/>
+
+                        <rect x="130" y="52" width="100" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="180" y="78" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Scaffold</text>
+                        <line x1="230" y1="73" x2="250" y2="73" stroke="#525b6d" stroke-width="1.2"/><polygon points="248,70 255,73 248,76" fill="#525b6d"/>
+
+                        <rect x="255" y="52" width="85" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="297" y="78" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Code</text>
+                        <line x1="340" y1="73" x2="360" y2="73" stroke="#525b6d" stroke-width="1.2"/><polygon points="358,70 365,73 358,76" fill="#525b6d"/>
+
+                        <rect x="365" y="52" width="95" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="412" y="78" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Review</text>
+                        <line x1="460" y1="73" x2="480" y2="73" stroke="#525b6d" stroke-width="1.2"/><polygon points="478,70 485,73 478,76" fill="#525b6d"/>
+
+                        <rect x="485" y="52" width="90" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="530" y="78" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Deploy</text>
+                        <line x1="575" y1="73" x2="595" y2="73" stroke="#525b6d" stroke-width="1.2"/><polygon points="593,70 600,73 593,76" fill="#525b6d"/>
+
+                        <rect x="600" y="52" width="95" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="647" y="78" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Operate</text>
+
+                        
+                        <rect x="600" y="106" width="95" height="42" rx="7" fill="#1f2937" stroke="#525b6d" stroke-width="1"/>
+                        <text x="647" y="132" text-anchor="middle" class="dm4" font-size="10.5" font-weight="600" fill="#e8ecf1">Document</text>
+                        <line x1="647" y1="94" x2="647" y2="106" stroke="#525b6d" stroke-width="1.2"/><polygon points="644,104 647,111 650,104" fill="#525b6d"/>
+
+                        
+                        
+                        <line x1="60" y1="94" x2="60" y2="170" stroke="#525b6d" stroke-width="1" stroke-dasharray="3 3"/>
+                        <rect x="5" y="170" width="110" height="46" rx="6" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.2"/>
+                        <text x="60" y="190" text-anchor="middle" class="dm4" font-size="9.5" fill="#10b981">Architecture</text>
+                        <text x="60" y="204" text-anchor="middle" class="dm4" font-size="9.5" fill="#10b981">Planning</text>
+                        <text x="60" y="226" text-anchor="middle" class="dm4" font-size="8.5" fill="#059669">WITH REVIEW</text>
+
+                        
+                        <line x1="180" y1="94" x2="180" y2="170" stroke="#525b6d" stroke-width="1" stroke-dasharray="3 3"/>
+                        <rect x="130" y="170" width="100" height="46" rx="6" fill="rgba(52, 211, 153,0.08)" stroke="#34d399" stroke-width="1.2"/>
+                        <text x="180" y="190" text-anchor="middle" class="dm4" font-size="9.5" fill="#34d399">Pipeline</text>
+                        <text x="180" y="204" text-anchor="middle" class="dm4" font-size="9.5" fill="#34d399">Scaffolding</text>
+                        <text x="180" y="226" text-anchor="middle" class="dm4" font-size="8.5" fill="#34d399">CAN DO</text>
+
+                        
+                        <line x1="412" y1="94" x2="412" y2="170" stroke="#525b6d" stroke-width="1" stroke-dasharray="3 3"/>
+                        <rect x="358" y="170" width="108" height="46" rx="6" fill="rgba(52, 211, 153,0.08)" stroke="#34d399" stroke-width="1.2"/>
+                        <text x="412" y="190" text-anchor="middle" class="dm4" font-size="9.5" fill="#34d399">Pre-review</text>
+                        <text x="412" y="204" text-anchor="middle" class="dm4" font-size="9.5" fill="#34d399">Checks</text>
+                        <text x="412" y="226" text-anchor="middle" class="dm4" font-size="8.5" fill="#34d399">CAN DO</text>
+
+                        
+                        <line x1="647" y1="94" x2="560" y2="170" stroke="#525b6d" stroke-width="1" stroke-dasharray="3 3"/>
+                        <rect x="505" y="170" width="110" height="46" rx="6" fill="rgba(52, 211, 153,0.08)" stroke="#34d399" stroke-width="1.2"/>
+                        <text x="560" y="190" text-anchor="middle" class="dm4" font-size="9.5" fill="#34d399">Incident</text>
+                        <text x="560" y="204" text-anchor="middle" class="dm4" font-size="9.5" fill="#34d399">Context</text>
+                        <text x="560" y="226" text-anchor="middle" class="dm4" font-size="8.5" fill="#34d399">CAN DO</text>
+
+                        
+                        <line x1="647" y1="148" x2="695" y2="170" stroke="#525b6d" stroke-width="1" stroke-dasharray="3 3"/>
+                        <rect x="640" y="170" width="90" height="46" rx="6" fill="rgba(5, 150, 105,0.08)" stroke="#059669" stroke-width="1.2"/>
+                        <text x="685" y="190" text-anchor="middle" class="dm4" font-size="9.5" fill="#10b981">Doc Sync</text>
+                        <text x="685" y="208" text-anchor="middle" class="dm4" font-size="8.5" fill="#059669">WITH REVIEW</text>
+
+                        
+                        <rect x="180" y="258" width="10" height="10" rx="2" fill="rgba(52, 211, 153,0.15)" stroke="#34d399" stroke-width="1"/>
+                        <text x="196" y="267" class="dm4" font-size="9" fill="#34d399">CAN DO (autonomous)</text>
+                        <rect x="340" y="258" width="10" height="10" rx="2" fill="rgba(5, 150, 105,0.15)" stroke="#059669" stroke-width="1"/>
+                        <text x="356" y="267" class="dm4" font-size="9" fill="#10b981">WITH REVIEW (supervised)</text>
+
+                        
+                        <text x="370" y="288" text-anchor="middle" class="dm4" font-size="10" fill="#525b6d">Agents plug into existing steps. Each has explicit guardrail zones. No new interfaces to learn.</text>
+                    </svg>
+                </div>
+
+                <p>Notice the pattern: agents plug into <em>existing</em> steps in the engineering lifecycle. They don't create new workflows — they augment the ones the team already uses. This is critical for adoption. An agent that lives inside your PR process gets used. An agent that requires opening a separate tool gets ignored.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The missing layer: institutional memory</h2>
+                <p>MCP gives agents real-time infrastructure data — the <em>what</em> of your system right now. Schema server knows your table structure. Pipeline server knows your DAG definitions. Code server knows your repo layout.</p>
+                <p>But there's an entire category of knowledge that doesn't live in infrastructure:</p>
+                <ul>
+                    <li><em>Why</em> was this pipeline designed this way? What constraints shaped the decision?</li>
+                    <li>The last three times the team tried to optimize this query, what approaches failed?</li>
+                    <li>This failure pattern recurs every quarter-end due to seasonal data volume spikes — but that's nowhere in the DAG definition</li>
+                    <li>The team standardized on a specific partitioning strategy six months ago — but that decision lives in a Slack thread, not in code</li>
+                    <li>Two modules are being deprecated next quarter, and any new pipeline should route around them</li>
+                </ul>
+                <p>This is <strong>institutional knowledge</strong> — the accumulated wisdom of the team, scattered across people's heads, old threads, postmortems, and design documents nobody maintains. MCP can't see any of it. And without it, agents produce work that is technically correct but architecturally naive.</p>
+                <p>The solution is a structured knowledge base — an LLM-maintained wiki that captures the institutional knowledge MCP can't reach. I've written about this in depth in <a href="/posts/knowledge-base-as-agentic-memory"><strong>The Knowledge Base Strategy: Giving AI Agents a Memory That Compounds</strong></a>, and I've open-sourced a template to build one: <a href="https://github.com/bmentges/knowledge-base-template" target="_blank" rel="noopener"><strong>knowledge-base-template</strong></a>.</p>
+                <p>The knowledge base isn't a replacement for MCP. It's the complementary layer. MCP tells the agent what the system looks like. The knowledge base tells the agent why the system looks that way.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The full stack: MCP + Knowledge Base + Guardrails</h2>
+                <p>This is where the three pieces come together into a complete context layer for production-grade AI agent integration:</p>
+                <ul>
+                    <li><strong>MCP = eyes.</strong> Live infrastructure data. What the system looks like right now. Real-time, precise, infrastructure-scoped. The agent queries context servers to understand schemas, pipelines, run histories, and conventions.</li>
+                    <li><strong>Knowledge Base = memory.</strong> Institutional wisdom. Why the system looks that way. Compounding, synthesized, organization-scoped. Architecture decisions, postmortem lessons, domain rules, in-flight projects. The knowledge that code alone can't convey.</li>
+                    <li><strong>Guardrails = boundaries.</strong> Trust framework. What the agent can and cannot do. Three zones that earn adoption by making risk explicit. The foundation that lets the team say "yes" to agent integration instead of "maybe later."</li>
+                </ul>
+                <p>Each piece is valuable on its own. Together, they're the complete context infrastructure that turns generic AI tools into team-specific engineering partners.</p>
+
+                
+                <div class="article-diagram article-diagram-wide">
+                    <svg viewBox="0 0 760 620" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <style>{`
+                                .dm5 { font-family: 'JetBrains Mono', monospace; }
+                                @keyframes dm5flow { to { stroke-dashoffset: -16; } }
+                            `}</style>
+                        </defs>
+                        <rect width="760" height="620" rx="12" fill="#0a0a0a"/>
+                        <rect x="1" y="1" width="758" height="618" rx="11" fill="none" stroke="#1f2937" stroke-width="1"/>
+
+                        
+                        <text x="380" y="34" text-anchor="middle" class="dm5" font-size="14" font-weight="600" fill="#ffffff">The Full Context Stack</text>
+                        <text x="380" y="52" text-anchor="middle" class="dm5" font-size="10" fill="#525b6d">Eyes + Memory + Boundaries = Production-Grade AI Integration</text>
+
+                        
+                        <rect x="30" y="75" width="210" height="290" rx="12" fill="rgba(52, 211, 153,0.04)" stroke="rgba(52, 211, 153,0.25)" stroke-width="1.2"/>
+                        <text x="135" y="100" text-anchor="middle" class="dm5" font-size="13" font-weight="600" fill="#34d399">MCP</text>
+                        <text x="135" y="118" text-anchor="middle" class="dm5" font-size="10" fill="#525b6d">Eyes</text>
+
+                        <rect x="48" y="138" width="174" height="28" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="135" y="157" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Pipeline metadata</text>
+                        <rect x="48" y="174" width="174" height="28" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="135" y="193" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Schema &amp; lineage</text>
+                        <rect x="48" y="210" width="174" height="28" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="135" y="229" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Code context</text>
+                        <rect x="48" y="246" width="174" height="28" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.12)" stroke-width="1"/>
+                        <text x="135" y="265" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Docs &amp; conventions</text>
+
+                        <text x="135" y="302" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Real-time</text>
+                        <text x="135" y="318" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Precise</text>
+                        <text x="135" y="334" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">Infrastructure-scoped</text>
+
+                        
+                        <rect x="275" y="75" width="210" height="290" rx="12" fill="rgba(5, 150, 105,0.04)" stroke="rgba(5, 150, 105,0.25)" stroke-width="1.2"/>
+                        <text x="380" y="100" text-anchor="middle" class="dm5" font-size="13" font-weight="600" fill="#059669">Knowledge Base</text>
+                        <text x="380" y="118" text-anchor="middle" class="dm5" font-size="10" fill="#525b6d">Memory</text>
+
+                        <rect x="293" y="138" width="174" height="28" rx="5" fill="rgba(5, 150, 105,0.05)" stroke="rgba(5, 150, 105,0.12)" stroke-width="1"/>
+                        <text x="380" y="157" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">Architecture decisions</text>
+                        <rect x="293" y="174" width="174" height="28" rx="5" fill="rgba(5, 150, 105,0.05)" stroke="rgba(5, 150, 105,0.12)" stroke-width="1"/>
+                        <text x="380" y="193" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">Postmortem lessons</text>
+                        <rect x="293" y="210" width="174" height="28" rx="5" fill="rgba(5, 150, 105,0.05)" stroke="rgba(5, 150, 105,0.12)" stroke-width="1"/>
+                        <text x="380" y="229" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">Domain rules</text>
+                        <rect x="293" y="246" width="174" height="28" rx="5" fill="rgba(5, 150, 105,0.05)" stroke="rgba(5, 150, 105,0.12)" stroke-width="1"/>
+                        <text x="380" y="265" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">In-flight projects</text>
+
+                        <text x="380" y="302" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">Compounding</text>
+                        <text x="380" y="318" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">Synthesized</text>
+                        <text x="380" y="334" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">Organization-scoped</text>
+
+                        
+                        <rect x="520" y="75" width="210" height="290" rx="12" fill="rgba(100,116,139,0.06)" stroke="rgba(100,116,139,0.3)" stroke-width="1.2"/>
+                        <text x="625" y="100" text-anchor="middle" class="dm5" font-size="13" font-weight="600" fill="#8b93a3">Guardrails</text>
+                        <text x="625" y="118" text-anchor="middle" class="dm5" font-size="10" fill="#525b6d">Boundaries</text>
+
+                        <rect x="538" y="138" width="174" height="28" rx="5" fill="rgba(52, 211, 153,0.06)" stroke="rgba(52, 211, 153,0.15)" stroke-width="1"/>
+                        <text x="625" y="157" text-anchor="middle" class="dm5" font-size="9.5" fill="#34d399">CAN DO: read, generate</text>
+                        <rect x="538" y="174" width="174" height="28" rx="5" fill="rgba(5, 150, 105,0.06)" stroke="rgba(5, 150, 105,0.15)" stroke-width="1"/>
+                        <text x="625" y="193" text-anchor="middle" class="dm5" font-size="9.5" fill="#10b981">REVIEW: deploy, config</text>
+                        <rect x="538" y="210" width="174" height="28" rx="5" fill="rgba(100,116,139,0.08)" stroke="rgba(100,116,139,0.2)" stroke-width="1"/>
+                        <text x="625" y="229" text-anchor="middle" class="dm5" font-size="9.5" fill="#525b6d">CANNOT: prod, merge</text>
+
+                        <text x="625" y="302" text-anchor="middle" class="dm5" font-size="9.5" fill="#8b93a3">Trust-earning</text>
+                        <text x="625" y="318" text-anchor="middle" class="dm5" font-size="9.5" fill="#8b93a3">Explicit</text>
+                        <text x="625" y="334" text-anchor="middle" class="dm5" font-size="9.5" fill="#8b93a3">Adoption-enabling</text>
+
+                        
+                        <rect x="300" y="400" width="160" height="70" rx="10" fill="#1f2937" stroke="#ffffff" stroke-width="1.5"/>
+                        <text x="380" y="432" text-anchor="middle" class="dm5" font-size="14" font-weight="600" fill="#ffffff">LLM Agent</text>
+                        <text x="380" y="452" text-anchor="middle" class="dm5" font-size="10" fill="#8b93a3">full context</text>
+
+                        
+                        <line x1="135" y1="365" x2="320" y2="420" stroke="#34d399" stroke-width="2" stroke-dasharray="5 4" style="animation: dm5flow 1.4s linear infinite"/>
+                        <polygon points="317,416 325,423 319,426" fill="#34d399"/>
+                        <text x="190" y="404" class="dm5" font-size="10" fill="#34d399">eyes</text>
+
+                        
+                        <circle cx="228" cy="393" fill="#34d399">
+                            <animate attributeName="r" values="2;4;2" dur="2s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.4;1;0.4" dur="2s" repeatCount="indefinite"/>
+                        </circle>
+
+                        
+                        <line x1="380" y1="365" x2="380" y2="400" stroke="#059669" stroke-width="2" stroke-dasharray="5 4" style="animation: dm5flow 1.4s linear infinite"/>
+                        <polygon points="375,396 380,404 385,396" fill="#059669"/>
+                        <text x="405" y="388" class="dm5" font-size="10" fill="#10b981">memory</text>
+
+                        
+                        <circle cx="380" cy="383" fill="#059669">
+                            <animate attributeName="r" values="2;4;2" dur="2.2s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.4;1;0.4" dur="2.2s" repeatCount="indefinite"/>
+                        </circle>
+
+                        
+                        <line x1="625" y1="365" x2="440" y2="420" stroke="#8b93a3" stroke-width="2" stroke-dasharray="5 4" style="animation: dm5flow 1.4s linear infinite"/>
+                        <polygon points="441,416 435,423 443,426" fill="#8b93a3"/>
+                        <text x="560" y="404" class="dm5" font-size="10" fill="#8b93a3">boundaries</text>
+
+                        
+                        <circle cx="532" cy="393" fill="#8b93a3">
+                            <animate attributeName="r" values="2;4;2" dur="2.4s" repeatCount="indefinite"/>
+                            <animate attributeName="opacity" values="0.4;1;0.4" dur="2.4s" repeatCount="indefinite"/>
+                        </circle>
+
+                        
+                        <line x1="380" y1="470" x2="380" y2="510" stroke="#ffffff" stroke-width="1.5"/>
+                        <polygon points="375,506 380,516 385,506" fill="#ffffff"/>
+
+                        
+                        <rect x="220" y="520" width="320" height="55" rx="10" fill="rgba(5, 150, 105,0.1)" stroke="#059669" stroke-width="1.8"/>
+                        <text x="380" y="546" text-anchor="middle" class="dm5" font-size="12" font-weight="600" fill="#10b981">Production-Grade</text>
+                        <text x="380" y="564" text-anchor="middle" class="dm5" font-size="12" font-weight="600" fill="#10b981">AI Integration</text>
+
+                        
+                        <text x="380" y="604" text-anchor="middle" class="dm5" font-size="10" fill="#525b6d">Three layers, one agent. MCP gives eyes. KB gives memory. Guardrails give trust. Together: the complete stack.</text>
+                    </svg>
+                </div>
+
+                <p>Without MCP, agents guess about your infrastructure. Without the knowledge base, agents forget your organizational context. Without guardrails, agents don't get adopted. You need all three.</p>
+                <p>The order matters too. In my experience, starting with guardrails earns the trust that lets you build context servers. MCP context servers produce the immediate value that justifies investing in a knowledge base. And the knowledge base is what makes the entire system compound over time.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>Getting started</h2>
+                <p>If you're reading this and thinking "this sounds like a lot," here's the pragmatic path. You don't need all three layers on day one. You need one well-chosen entry point that earns trust and demonstrates value.</p>
+
+                <h3>Step 1: Define guardrails (day 1)</h3>
+                <p>Before you build anything, write down the three zones for your team. What can agents do autonomously? What needs review? What's off-limits? This takes an hour and it's the most important hour you'll spend. Without this document, your first agent incident will kill the initiative. With it, incidents become boundary refinements.</p>
+
+                <h3>Step 2: Build one context server (week 1)</h3>
+                <p>Pick the server with the most immediate value. For most data engineering teams, that's the schema/warehouse metadata server — agents use it constantly for code generation, review, and scaffolding. Get it running, connect it to your agents via MCP, and let the team experience context-aware AI assistance. The jump from generic suggestions to infrastructure-grounded suggestions is visceral. It sells the approach faster than any slide deck.</p>
+
+                <h3>Step 3: Build your first agent (week 2)</h3>
+                <p>Start with incident context assembly. It has the highest impact-to-effort ratio and the fastest team buy-in — nobody argues with "the thing that makes 3 AM pages less painful." Keep it in the CAN DO zone (read-only context assembly, no remediation actions). Let it prove itself.</p>
+
+                <h3>Step 4: Start the knowledge base (week 3)</h3>
+                <p>Ingest your most important institutional documents — three ADRs, two postmortems, your system topology doc. Use the <a href="https://github.com/bmentges/knowledge-base-template" target="_blank" rel="noopener"><strong>knowledge-base-template</strong></a> to set up the structure. The knowledge base starts compounding from the moment you feed it the first document. Every agent you build after this point benefits from it.</p>
+
+                <h3>Step 5: Expand (week 4+)</h3>
+                <p>Add context servers. Build more agents. Ingest more institutional knowledge. The compound effect means each addition is more valuable than the last — the second agent benefits from the context the first agent's server already provides, plus whatever knowledge base content has accumulated since week 3.</p>
+
+                <p>Measure adoption, not capability. The metric that matters isn't "how smart is the agent" — it's "how many engineers use it regularly." Smart agents that nobody trusts produce zero value. Limited agents that the team relies on daily compound into transformative tools.</p>
+            </section>
+
+            
+            <section class="content-section">
+                <h2>The bottom line</h2>
+                <p>AI agents in engineering are production-ready. But their value is determined entirely by the context infrastructure underneath them.</p>
+                <p>MCP gives agents eyes into your live infrastructure — the <em>what</em>. A knowledge base gives them memory of your organization — the <em>why</em>. Guardrails define the boundaries that earn team trust — the <em>how much</em>. Together, they're the full context layer that turns generic AI into your team's AI.</p>
+                <p>The teams that will win with AI agents aren't the ones with the best models. They're the ones that build the context infrastructure to make those models genuinely understand their system. MCP is open. The <a href="https://github.com/bmentges/knowledge-base-template" target="_blank" rel="noopener">knowledge base template</a> is open. The guardrails framework is straightforward. The hard part isn't the technology — it's the organizational discipline to start with boundaries, build context systematically, and let trust compound.</p>
+                <p>Start small. Start with guardrails. Build one context server. Ship one agent. Let it prove itself. Then expand.</p>
+            </section>
