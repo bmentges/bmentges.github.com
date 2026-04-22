@@ -1,0 +1,91 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('posts', ({ data }) => data.published !== false);
+  const tagMap = new Map<string, typeof posts>();
+  for (const post of posts) {
+    for (const tag of post.data.tags ?? []) {
+      if (!tagMap.has(tag)) tagMap.set(tag, []);
+      tagMap.get(tag)!.push(post);
+    }
+  }
+  return Array.from(tagMap.entries()).map(([tag, matched]) => ({
+    params: { tag },
+    props: { tag, matched },
+  }));
+}
+
+const { tag, matched } = Astro.props;
+
+function readingTime(text: string): number {
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 220));
+}
+
+const posts = matched
+  .map(p => ({ slug: p.slug, ...p.data, rt: readingTime(p.body) }))
+  .sort((a, b) => (b.date?.getTime() ?? 0) - (a.date?.getTime() ?? 0));
+---
+
+<Layout
+  title={`${tag} — Bruno Mentges`}
+  description={`Writing tagged "${tag}" by Bruno Mentges.`}
+>
+  <section class="tag-page">
+    <div class="container-marketing">
+      <a href="/" class="back-link">← All writing</a>
+      <span class="section-label">Tag</span>
+      <h1>#{tag}</h1>
+      <p class="count">{posts.length} {posts.length === 1 ? 'post' : 'posts'}</p>
+
+      <div class="post-grid">
+        {posts.map(p => (
+          <PostCard
+            href={`/posts/${p.slug}`}
+            title={p.title}
+            description={p.description}
+            date={p.date}
+            tags={p.tags}
+            readingTime={p.rt}
+          />
+        ))}
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<style>
+  .tag-page {
+    padding: 3rem 0 4rem;
+  }
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
+  }
+  .back-link:hover { color: var(--accent); }
+  .tag-page h1 {
+    margin-top: 0.75rem;
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    letter-spacing: -0.025em;
+    font-family: var(--font-mono);
+    font-weight: 600;
+  }
+  .count {
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+  }
+  .post-grid {
+    margin-top: 2.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+</style>
