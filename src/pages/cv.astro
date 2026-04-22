@@ -1,0 +1,98 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="CV — Bruno Mentges"
+  description="How to get a detailed CV with references and company names. Summary version with anonymized highlights is on this page."
+>
+  <article class="cv">
+    <div class="container-prose">
+      <header class="cv-hero">
+        <span class="section-label">CV</span>
+        <h1>Curriculum Vitae</h1>
+        <p class="lede">
+          A detailed CV with company names and references is available by request
+          or on LinkedIn. This page is a summary of the shape of my experience.
+        </p>
+      </header>
+
+      <section class="prose cv-body">
+        <h2>Get the full CV</h2>
+        <ul>
+          <li>
+            <a href="https://www.linkedin.com/in/brunomentgesdecarvalho/" target="_blank" rel="noopener noreferrer">LinkedIn profile</a>
+            {' '}— detailed roles, dates, and recommendations
+          </li>
+          <li>
+            <a href="https://github.com/bmentges" target="_blank" rel="noopener noreferrer">GitHub</a>
+            {' '}— code, open source, projects
+          </li>
+          <li>
+            Email — reach out via LinkedIn for a tailored copy (EN or PT-BR) in PDF
+          </li>
+        </ul>
+
+        <h2>Summary</h2>
+        <p>
+          Senior Data Engineer &amp; AI Engineer with ~25 years of software engineering and
+          ~15 years specialized in data platforms. Currently focused on integrating LLM agents
+          into production data workflows. Native Portuguese, fluent English (C2). Based in
+          Rio de Janeiro, available for remote international engagements or relocation with
+          visa sponsorship.
+        </p>
+
+        <h2>Highlights</h2>
+        <ul>
+          <li><strong>Petabyte-scale ad data</strong> — 1.5B records/day on AWS EMR/Hadoop, powering real-time ad optimization for thousands of advertisers.</li>
+          <li><strong>Self-healing finance pipeline</strong> — replaced a recurring monthly manual data-repair cycle with automated detect-and-remediate, running unattended at close.</li>
+          <li><strong>Data platform from zero</strong> — stood up a full Google Cloud data platform (lake, warehouse, analytics) for a logistics company adopting data-as-a-product.</li>
+          <li><strong>Production AI integration</strong> — shipped Anthropic Claude agents with guardrails, skills, and tool-use into day-to-day data engineering; extended with Model Context Protocol (MCP).</li>
+        </ul>
+
+        <h2>Core stack</h2>
+        <p>
+          Python, SQL, Scala, Java, TypeScript. Snowflake, BigQuery, Redshift. dbt, Airflow,
+          Prefect. Spark, Hadoop. AWS (primary), GCP, Azure. Terraform, Docker, Kubernetes.
+          Anthropic Claude (primary LLM), MCP, self-hosted models.
+        </p>
+
+        <h2>Education</h2>
+        <p>
+          Bachelor of Technology — Computer Science (Centro Universitário Carioca, 2006–2011).
+        </p>
+
+        <h2>Languages</h2>
+        <p>
+          English (fluent, C2) · Portuguese (native).
+        </p>
+      </section>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .cv {
+    padding: 3rem 0 4rem;
+  }
+  .cv-hero {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .cv-hero h1 {
+    margin-top: 0.75rem;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    letter-spacing: -0.03em;
+  }
+  .cv-hero .lede {
+    margin-top: 1.25rem;
+    font-size: 1.25rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+    max-width: 55ch;
+  }
+  .cv-body h2 {
+    margin-top: 2.75rem;
+  }
+</style>

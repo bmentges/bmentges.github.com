@@ -1,6 +1,6 @@
 ---
-import { getCollection } from 'astro:content';
 import Layout from '../../layouts/Layout.astro';
+import { getCollection } from 'astro:content';
 
 export async function getStaticPaths() {
   const posts = await getCollection('posts');
@@ -12,72 +12,135 @@ export async function getStaticPaths() {
 
 const { post } = Astro.props;
 const { Content } = await post.render();
+
+const words = post.body.trim().split(/\s+/).length;
+const rt = Math.max(1, Math.round(words / 220));
+
+const dateLong = post.data.date?.toLocaleDateString('en-US', {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+const ogImage = `/og-default.png`;
 ---
 
-<Layout title={`${post.data.title} | Bruno Mentges`}>
-  <main class="max-w-4xl mx-auto px-4 py-24">
-    <a href="/" class="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors mb-12 inline-block">
-      ← Back to Nexus
-    </a>
-    
-    <article class="prose prose-invert prose-purple max-w-none">
-      <header class="mb-12">
-        <div class="flex items-center gap-x-3 mb-6">
-          <span class="px-3 py-1 text-xs font-medium text-purple-400 bg-purple-400/10 rounded-full border border-purple-400/20 uppercase tracking-wider">
-            {post.data.category}
-          </span>
-          <span class="text-sm text-neutral-500">
-            {post.data.date?.toLocaleDateString()}
-          </span>
-        </div>
-        <h1 class="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          {post.data.title}
-        </h1>
-        {post.data.description && (
-          <p class="text-xl text-neutral-400 leading-relaxed italic">
-            {post.data.description}
-          </p>
+<Layout
+  title={`${post.data.title} — Bruno Mentges`}
+  description={post.data.description}
+  ogImage={ogImage}
+>
+  <article class="post">
+    <div class="container-prose">
+      <a href="/" class="back-link">← Back to writing</a>
+
+      <header class="post-header">
+        {post.data.tags?.length > 0 && (
+          <div class="post-tags">
+            {post.data.tags.slice(0, 4).map(t => <span class="tag">{t}</span>)}
+          </div>
         )}
+
+        <h1>{post.data.title}</h1>
+
+        {post.data.description && (
+          <p class="post-lede">{post.data.description}</p>
+        )}
+
+        <div class="post-meta">
+          {dateLong && <time datetime={post.data.date?.toISOString()}>{dateLong}</time>}
+          <span class="dot" aria-hidden="true">·</span>
+          <span>{rt} min read</span>
+          {post.data.category && (
+            <>
+              <span class="dot" aria-hidden="true">·</span>
+              <span>{post.data.category}</span>
+            </>
+          )}
+        </div>
       </header>
-      
-      <div class="bg-neutral-900/50 border border-neutral-800 rounded-3xl p-8 md:p-12">
+
+      <div class="prose">
         <Content />
       </div>
 
-      <footer class="mt-16 pt-8 border-t border-neutral-800">
-        <div class="flex flex-wrap gap-2">
-          {post.data.tags.map(tag => (
-            <span class="text-xs font-medium text-neutral-500 bg-neutral-800 px-3 py-1 rounded-full">
-              #{tag}
-            </span>
-          ))}
-        </div>
+      <footer class="post-footer">
+        <hr />
+        <p class="cross-post">
+          A version of this post may also appear on{' '}
+          <a href="https://mentgesinformatica.com.br" target="_blank" rel="noopener noreferrer">
+            mentgesinformatica.com.br
+          </a>
+          — the consultancy site.
+        </p>
+        <a href="/" class="back-link bottom">← Back to all writing</a>
       </footer>
-    </article>
-  </main>
+    </div>
+  </article>
 </Layout>
 
-<style is:global>
-  /* Custom prose overrides for the high-end tech look */
-  .prose h1, .prose h2, .prose h3 {
-    @apply text-white font-bold tracking-tight;
+<style>
+  .post {
+    padding: 2.5rem 0 5rem;
   }
-  .prose p {
-    @apply text-neutral-300 leading-relaxed;
+  .back-link {
+    display: inline-block;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 2rem;
   }
-  .prose code {
-    @apply text-purple-300 bg-purple-500/10 px-1.5 py-0.5 rounded border border-purple-500/20 font-mono text-sm;
+  .back-link:hover { color: var(--accent); }
+  .back-link.bottom { margin-top: 2rem; }
+
+  .post-header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-light);
   }
-  .prose code::before, .prose code::after {
-    content: "" !important;
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-bottom: 1.25rem;
   }
-  .prose pre {
-    @apply bg-neutral-950! border border-neutral-800 rounded-2xl p-6 my-8;
+  .post-header h1 {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--text);
   }
-  .prose img {
-    @apply rounded-2xl border border-neutral-800;
+  .post-lede {
+    font-size: 1.25rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+    margin-top: 1.25rem;
+    max-width: 60ch;
   }
-  .prose a {
-    @apply text-purple-400 no-underline hover:text-purple-300 transition-colors border-b border-purple-400/30 hover:border-purple-300;
+  .post-meta {
+    margin-top: 1.5rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .post-meta .dot { color: var(--text-faint); }
+
+  .post-footer {
+    margin-top: 3.5rem;
+  }
+  .post-footer hr {
+    border: none;
+    border-top: 1px solid var(--border-light);
+    margin: 0 0 2rem;
+  }
+  .cross-post {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin: 0;
   }
 </style>

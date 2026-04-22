@@ -1,97 +1,207 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { NeuralBackground } from '../components/NeuralBackground';
+import PostCard from '../components/PostCard.astro';
 import { getCollection } from 'astro:content';
 
-const posts = await getCollection('posts');
-const sortedPosts = posts.sort((a, b) => {
-	const dateA = a.data.date || new Date(0);
-	const dateB = b.data.date || new Date(0);
-	return dateB.getTime() - dateA.getTime();
+const all = await getCollection('posts', ({ data }) => data.published !== false);
+
+const sorted = all.sort((a, b) => {
+  const da = a.data.date?.getTime() ?? 0;
+  const db = b.data.date?.getTime() ?? 0;
+  return db - da;
 });
+
+function readingTime(text: string): number {
+  const words = text.trim().split(/\s+/).length;
+  return Math.max(1, Math.round(words / 220));
+}
+
+const posts = sorted.map(p => ({
+  slug: p.slug,
+  ...p.data,
+  rt: readingTime(p.body),
+}));
+
+const featured = posts[0];
+const rest = posts.slice(1);
 ---
 
-<Layout title="Bruno Mentges | AI Engineering">
-	<NeuralBackground client:load />
-	
-	<main class="flex flex-col items-center">
-		<!-- Hero Section -->
-		<section class="flex flex-col items-center justify-center min-h-screen px-4 text-center">
-			<div class="relative max-w-4xl">
-				<div class="inline-flex items-center gap-x-2 px-3 py-1 text-sm font-medium text-purple-400 bg-purple-400/10 border border-purple-400/20 rounded-full mb-8">
-					<span class="relative flex h-2 w-2">
-						<span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-75"></span>
-						<span class="relative inline-flex rounded-full h-2 w-2 bg-purple-500"></span>
-					</span>
-					2026 AI Roadmap Active
-				</div>
-				<h1 class="text-6xl font-bold tracking-tight text-white sm:text-8xl">
-					The Neural <span class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-cyan-400">Nexus</span>
-				</h1>
-				<p class="mt-8 text-xl leading-8 text-neutral-400 max-w-2xl mx-auto">
-					Senior Data Engineer bridging the gap to AI Engineering. 
-					Sharing high-impact articles and experimental intelligence projects.
-				</p>
-				<div class="flex items-center justify-center gap-x-6 mt-12">
-					<a href="#posts" class="px-8 py-4 text-sm font-semibold text-white transition-all rounded-full bg-purple-600 border border-purple-500 hover:bg-purple-500 shadow-[0_0_20px_rgba(168,85,247,0.4)]">
-						Explore Knowledge
-					</a>
-					<a href="http://mentgesinformatica.com.br" target="_blank" class="text-sm font-semibold leading-6 text-neutral-300 hover:text-white transition-colors">
-						Mentges Informática <span aria-hidden="true">→</span>
-					</a>
-				</div>
-			</div>
-		</section>
+<Layout title="Bruno Mentges — Field notes on data & AI">
+  <section class="hero">
+    <div class="container-marketing">
+      <span class="section-label">Writing</span>
+      <h1>Field notes on data &amp; AI — from 28 years in the trenches.</h1>
+      <p class="lede">
+        Production systems at petabyte scale. LLM agents in data pipelines. Platform design
+        decisions that age well. Written by a senior data engineer in Rio de Janeiro for
+        engineering leaders and builders 10+ years in.
+      </p>
+      <div class="hero-meta">
+        <span>{posts.length} {posts.length === 1 ? 'post' : 'posts'}</span>
+        {featured && (
+          <>
+            <span class="dot" aria-hidden="true">·</span>
+            <span>Last updated <time datetime={featured.date?.toISOString()}>{featured.date?.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</time></span>
+          </>
+        )}
+        <span class="dot" aria-hidden="true">·</span>
+        <a href="/rss.xml">RSS</a>
+      </div>
+    </div>
+  </section>
 
-		<!-- Bento Grid Section -->
-		<section id="posts" class="w-full max-w-7xl px-4 py-24">
-			<div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-4">
-				<div>
-					<h2 class="text-3xl font-bold text-white mb-2">Technical Insights</h2>
-					<p class="text-neutral-400">Deep dives into data systems, Python, and AI.</p>
-				</div>
-				<div class="h-px flex-grow bg-gradient-to-r from-neutral-800 to-transparent mx-8 hidden md:block"></div>
-			</div>
+  {featured && (
+    <section class="featured-section">
+      <div class="container-marketing">
+        <div class="section-head">
+          <span class="section-label">Latest</span>
+        </div>
+        <PostCard
+          href={`/posts/${featured.slug}`}
+          title={featured.title}
+          description={featured.description}
+          date={featured.date}
+          tags={featured.tags}
+          readingTime={featured.rt}
+          featured
+        />
+      </div>
+    </section>
+  )}
 
-			<div class="grid grid-cols-1 md:grid-cols-6 gap-6">
-				{sortedPosts.map((post, index) => (
-					<a 
-						href={`/posts/${post.slug}`}
-						class={`group relative overflow-hidden rounded-3xl border border-neutral-800 bg-neutral-900/50 p-8 transition-all hover:border-purple-500/50 hover:bg-neutral-800/50 ${
-							index === 0 ? 'md:col-span-4 md:row-span-2' : 'md:col-span-2'
-						}`}
-					>
-						<div class="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-cyan-500/5 opacity-0 transition-opacity group-hover:opacity-100"></div>
-						<div class="relative flex flex-col h-full">
-							<div class="flex items-center gap-x-3 mb-4">
-								<span class="px-3 py-1 text-xs font-medium text-purple-400 bg-purple-400/10 rounded-full border border-purple-400/20 uppercase tracking-wider">
-									{post.data.category || 'Engineering'}
-								</span>
-								<span class="text-xs text-neutral-500">
-									{post.data.date ? post.data.date.toLocaleDateString() : 'Recent'}
-								</span>
-							</div>
-							<h3 class={`font-bold text-white group-hover:text-purple-300 transition-colors ${
-								index === 0 ? 'text-3xl md:text-4xl' : 'text-xl'
-							}`}>
-								{post.data.title}
-							</h3>
-							<p class="mt-4 text-neutral-400 leading-relaxed line-clamp-3">
-								{post.data.description || 'Dive into the technical nuances and implementation details of this project.'}
-							</p>
-							<div class="mt-auto pt-8 flex items-center text-sm font-medium text-purple-400 opacity-0 transition-all translate-x-[-10px] group-hover:opacity-100 group-hover:translate-x-0">
-								Read More <span class="ml-2">→</span>
-							</div>
-						</div>
-					</a>
-				))}
-				
-				{sortedPosts.length === 0 && (
-					<div class="col-span-full py-20 text-center border border-dashed border-neutral-800 rounded-3xl">
-						<p class="text-neutral-500">Intelligence gathering in progress. Posts arriving soon.</p>
-					</div>
-				)}
-			</div>
-		</section>
-	</main>
+  {rest.length > 0 && (
+    <section class="list-section">
+      <div class="container-marketing">
+        <div class="section-head">
+          <span class="section-label">More writing</span>
+        </div>
+        <div class="post-grid">
+          {rest.map(p => (
+            <PostCard
+              href={`/posts/${p.slug}`}
+              title={p.title}
+              description={p.description}
+              date={p.date}
+              tags={p.tags}
+              readingTime={p.rt}
+            />
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
+  {posts.length === 0 && (
+    <section class="empty-section">
+      <div class="container-marketing">
+        <p class="empty-note">No posts yet — writing in progress.</p>
+      </div>
+    </section>
+  )}
+
+  <section class="about-teaser">
+    <div class="container-marketing">
+      <div class="about-card">
+        <span class="section-label">About</span>
+        <h2>Engineer first. Consultant second.</h2>
+        <p>
+          Senior Data &amp; AI Engineer with ~25 years shipping software and ~15 years
+          specializing in data platforms — across marketing, fintech, logtech, travel, and media.
+          Currently integrating LLM agents into production data engineering.
+        </p>
+        <div class="about-actions">
+          <a href="/about" class="btn btn-primary">Read the full story →</a>
+          <a href="/cv" class="btn btn-secondary">View CV</a>
+        </div>
+      </div>
+    </div>
+  </section>
 </Layout>
+
+<style>
+  .hero {
+    padding: 5rem 0 3rem;
+  }
+  .hero h1 {
+    margin-top: 1rem;
+    max-width: 22ch;
+  }
+  .hero .lede {
+    margin-top: 1.5rem;
+    max-width: 60ch;
+    font-size: 1.3125rem;
+    line-height: 1.55;
+    color: var(--text-secondary);
+  }
+  .hero-meta {
+    margin-top: 2rem;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+  }
+  .hero-meta .dot { color: var(--text-faint); }
+  .hero-meta a {
+    color: var(--accent-hover);
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .featured-section,
+  .list-section,
+  .empty-section {
+    padding: 2.5rem 0;
+  }
+  .section-head {
+    margin-bottom: 1.5rem;
+  }
+  .post-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1.25rem;
+  }
+
+  .empty-note {
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 3rem 0;
+    text-align: center;
+    border: 1px dashed var(--border);
+    border-radius: var(--radius-lg);
+  }
+
+  .about-teaser {
+    padding: 4rem 0 2rem;
+  }
+  .about-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: 2.5rem;
+    max-width: 720px;
+  }
+  .about-card h2 {
+    margin-top: 0.75rem;
+  }
+  .about-card p {
+    margin-top: 1rem;
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    max-width: 58ch;
+  }
+  .about-actions {
+    margin-top: 1.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 640px) {
+    .hero { padding: 3rem 0 1.5rem; }
+    .hero .lede { font-size: 1.15rem; }
+    .about-card { padding: 1.75rem; }
+  }
+</style>

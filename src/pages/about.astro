@@ -1,0 +1,149 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout
+  title="About — Bruno Mentges"
+  description="28 years of software engineering, ~15 of them in data platforms, the last two pulling AI into production data work. Field notes from a senior engineer in Rio."
+>
+  <article class="about">
+    <div class="container-prose">
+      <header class="about-hero">
+        <span class="section-label">About</span>
+        <h1>Engineer first. Consultant second.</h1>
+        <p class="lede">
+          Senior Data &amp; AI Engineer. 28 years shipping software, ~15 of those
+          specialized in data platforms, the last two pulling AI into production data work.
+          Rio de Janeiro, GMT-3.
+        </p>
+      </header>
+
+      <section class="prose about-body">
+        <h2>The short version</h2>
+        <p>
+          I design and operate end-to-end data systems — ingestion, modeling, serving,
+          observability — from mid-market SaaS to petabyte ad tech. Over the last two years
+          I've shipped Anthropic Claude agents (guardrails, skills, tool-use orchestration, MCP)
+          into day-to-day data engineering workflows. I write here about what actually holds up
+          in production and what doesn't.
+        </p>
+
+        <h2>The path</h2>
+        <p>
+          Six global-scale companies, a few smaller ones, and one long thread: making data
+          systems reliable enough that other people can rely on them.
+        </p>
+
+        <h3>Major B2B Data Intelligence Platform — Senior Data Engineer (2024–2026)</h3>
+        <p>
+          Sole data engineer embedded in Sales &amp; Marketing. Rebuilt the finance pipeline:
+          replaced a recurring monthly manual data-fix cycle with an automated
+          detect-and-remediate system that runs unattended at close. Introduced Claude agents
+          with guardrails and tool-use into development and maintenance workflows. Extended
+          with Model Context Protocol (MCP) in early 2026.
+        </p>
+
+        <h3>Fast-Growing Logistics Startup — Tech Leader / Senior Software Developer (2023–2024)</h3>
+        <p>
+          Stood up the entire data function from zero. Designed the governance architecture —
+          lake, warehouse, analytics — on Google Cloud. Built ingestion pipelines from four
+          heterogeneous source systems into BigQuery. Defined the team's charter and initial
+          delivery roadmap so the internal team could own the platform going forward.
+        </p>
+
+        <h3>Global Domains &amp; Hosting Platform — Senior Data Software Engineer (2022–2023)</h3>
+        <p>
+          M&amp;A integration engineering. Absorbed pipelines and services from acquired
+          companies into the parent platform. Brought acquired systems into GDPR compliance
+          (PII handling, consent, retention). Migrated services from AWS to GCP.
+        </p>
+
+        <h3>Leading Global Travel Platform — Senior Software Engineer (2021–2022)</h3>
+        <p>
+          Built the new data pipeline on AWS (S3, EMR, Glue, Redshift, Lambda, DynamoDB).
+          Created the data lake that unblocked the ML team — they could work with near
+          real-time company data without impacting production.
+        </p>
+
+        <h3>Top-10 Global Ad Tech Platform — Data Software Engineer (2017–2021)</h3>
+        <p>
+          Data team at one of the world's largest ad platforms. <strong>1.5 billion records
+          per day at petabyte scale.</strong> AWS EMR/Hadoop, Scala/Java/Python. Powered
+          real-time retargeting, prospecting, and email optimization for thousands of advertisers.
+          This is where I learned how big data actually behaves under load.
+        </p>
+
+        <h3>Earlier stops</h3>
+        <p>
+          A leading Brazilian e-commerce (tech lead, hackathon that cleared ~70% of the
+          small-bug backlog and killed a recurring 6-hour Saturday outage), a Brazilian fintech
+          payments company, a digital agency, Brazil's largest media company (5+ years),
+          enterprise consulting, a European telecom software vendor in Germany, a Brazilian
+          math research institute, and my first job — trainee at a major telecom operator in 1998.
+        </p>
+
+        <h2>Why data and AI together</h2>
+        <p>
+          Data engineering is where the inputs to every AI system come from. If the
+          inputs are wrong, the model output is wrong — and nobody notices until
+          someone above you reads a dashboard and asks a question nobody can answer.
+          LLMs change what a data team can do inside its own workflows: review code
+          they'd never review before, catch regressions earlier, document what they
+          build, answer questions about pipelines without rebuilding tribal knowledge.
+          That's the integration I've been shipping and writing about.
+        </p>
+
+        <h2>How I work</h2>
+        <p>
+          Short feedback loops. One change at a time. Tests before trust. Observability
+          as a first-class citizen, not an afterthought. I prefer the boring, obvious
+          solution unless there's a real reason to be clever. I read a lot and write
+          as a way of thinking — this site is part of that habit.
+        </p>
+
+        <h2>Contact</h2>
+        <p>
+          Best reached via{' '}
+          <a href="https://www.linkedin.com/in/brunomentgesdecarvalho/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+          {' '}or{' '}
+          <a href="https://github.com/bmentges" target="_blank" rel="noopener noreferrer">GitHub</a>.
+          For consulting engagements, see{' '}
+          <a href="https://mentgesinformatica.com.br" target="_blank" rel="noopener noreferrer">
+            mentgesinformatica.com.br
+          </a>.
+        </p>
+      </section>
+    </div>
+  </article>
+</Layout>
+
+<style>
+  .about {
+    padding: 3rem 0 4rem;
+  }
+  .about-hero {
+    margin-bottom: 2.5rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid var(--border-light);
+  }
+  .about-hero h1 {
+    margin-top: 0.75rem;
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    letter-spacing: -0.03em;
+  }
+  .about-hero .lede {
+    margin-top: 1.25rem;
+    font-size: 1.25rem;
+    line-height: 1.55;
+    color: var(--text-muted);
+    max-width: 55ch;
+  }
+  .about-body h2 {
+    margin-top: 2.75rem;
+  }
+  .about-body h3 {
+    margin-top: 2rem;
+    color: var(--text);
+    font-size: 1.15rem;
+  }
+</style>

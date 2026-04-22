@@ -1,0 +1,113 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  description?: string;
+  date?: Date;
+  tags?: string[];
+  readingTime?: number;
+  featured?: boolean;
+}
+
+const { href, title, description, date, tags = [], readingTime, featured = false } = Astro.props;
+
+const dateStr = date
+  ? date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+  : null;
+---
+
+<a href={href} class:list={["post-card", featured && "featured"]}>
+  <div class="post-meta">
+    {dateStr && <time datetime={date?.toISOString()}>{dateStr}</time>}
+    {readingTime && <span class="dot" aria-hidden="true">·</span>}
+    {readingTime && <span>{readingTime} min read</span>}
+  </div>
+
+  <h3 class="post-title">{title}</h3>
+
+  {description && <p class="post-desc">{description}</p>}
+
+  {tags.length > 0 && (
+    <div class="post-tags">
+      {tags.slice(0, 3).map(t => <span class="tag">{t}</span>)}
+    </div>
+  )}
+
+  <span class="post-arrow" aria-hidden="true">Read →</span>
+</a>
+
+<style>
+  .post-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.75rem;
+    transition: all var(--duration) var(--ease-out);
+    text-decoration: none;
+    color: inherit;
+    height: 100%;
+  }
+  .post-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+    color: inherit;
+  }
+  .post-card.featured {
+    padding: 2.25rem;
+    background:
+      linear-gradient(145deg, var(--accent-soft), transparent 60%),
+      var(--surface);
+    border-color: var(--border);
+  }
+  .post-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+  }
+  .post-meta .dot { color: var(--text-faint); }
+  .post-title {
+    font-size: 1.3rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.3;
+    letter-spacing: -0.015em;
+    margin: 0;
+  }
+  .featured .post-title {
+    font-size: 1.65rem;
+    line-height: 1.2;
+  }
+  .post-desc {
+    font-size: 1.0625rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin: 0;
+  }
+  .post-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: auto;
+  }
+  .post-arrow {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 0.25rem;
+    opacity: 0.8;
+    transition: opacity var(--duration) var(--ease-out), transform var(--duration) var(--ease-out);
+  }
+  .post-card:hover .post-arrow {
+    opacity: 1;
+    transform: translateX(2px);
+  }
+</style>

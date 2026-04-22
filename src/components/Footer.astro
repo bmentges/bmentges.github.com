@@ -1,0 +1,64 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="site-footer">
+  <div class="container-marketing footer-inner">
+    <div class="footer-col">
+      <p class="footer-brand">Bruno Mentges de Carvalho</p>
+      <p class="footer-tag">Senior Data & AI Engineer — Rio de Janeiro, GMT-3</p>
+    </div>
+
+    <nav class="footer-nav" aria-label="Footer">
+      <a href="/">Writing</a>
+      <a href="/about">About</a>
+      <a href="/cv">CV</a>
+      <a href="https://github.com/bmentges" target="_blank" rel="noopener noreferrer">GitHub</a>
+      <a href="https://www.linkedin.com/in/brunomentgesdecarvalho/" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      <a href="https://mentgesinformatica.com.br" target="_blank" rel="noopener noreferrer">Consultancy</a>
+      <a href="/rss.xml">RSS</a>
+    </nav>
+
+    <p class="footer-meta">© {year} Bruno Mentges. Built with Astro. Hosted on GitHub Pages.</p>
+  </div>
+</footer>
+
+<style>
+  .site-footer {
+    margin-top: 6rem;
+    padding: 3rem 0 2.5rem;
+    border-top: 1px solid var(--border-light);
+    background: transparent;
+  }
+  .footer-inner {
+    display: grid;
+    gap: 1.5rem;
+  }
+  .footer-brand {
+    font-weight: 600;
+    color: var(--text);
+    margin: 0;
+  }
+  .footer-tag {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    margin: 0.25rem 0 0;
+  }
+  .footer-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem 1.25rem;
+  }
+  .footer-nav a {
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    padding: 0.15rem 0;
+  }
+  .footer-nav a:hover { color: var(--accent); }
+  .footer-meta {
+    color: var(--text-faint);
+    font-size: 0.825rem;
+    margin: 0;
+    font-family: var(--font-mono);
+  }
+</style>
